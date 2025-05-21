@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="sidebar">
+    <div class="sidebar-header">
+        <img src="{{ url_for('static', filename='images/logo2.png') }}" alt="KishanX Logo" class="logo">
+        <h2>KishanX</h2>
+    </div>
+    <ul class="nav-links">
+        <li><a href="{{ url_for('dashboard') }}" class="nav-link"><i class="fas fa-chart-line"></i>Dashboard</a></li>
+        <li><a href="{{ url_for('indian_market') }}" class="nav-link"><i class="fas fa-rupee-sign"></i>Indian Market</a></li>
+        <li><a href="{{ url_for('otc_market') }}" class="nav-link"><i class="fas fa-exchange-alt"></i>OTC Market</a></li>
+        <li><a href="{{ url_for('index') }}" class="nav-link"><i class="fas fa-globe"></i>Forex</a></li>
+        <li><a href="{{ url_for('profile') }}" class="nav-link active"><i class="fas fa-user"></i>Profile</a></li>
+        <li><a href="{{ url_for('subscription') }}" class="nav-link"><i class="fas fa-crown"></i>Subscription</a></li>
+        <li><a href="{{ url_for('legal') }}" class="nav-link"><i class="fas fa-gavel"></i>Legal</a></li>
+        <li><a href="{{ url_for('logout') }}" class="nav-link"><i class="fas fa-sign-out-alt"></i>Logout</a></li>
+    </ul>
+</div>
+<div class="main">
+    <div class="main-content-grid">
+        <div style="position:absolute;left:50%;transform:translateX(-50%);top:60px;text-align:center;z-index:2;">
+            <div class="welcome" style="margin-bottom:24px;">Profile</div>
+        </div>
+        <div class="market-info-card" style="min-width:320px;max-width:400px;margin:auto;">
+            <div class="profile-header" style="text-align:center;">
+                <div class="profile-avatar">
+                    <img src="{{ url_for('static', filename='logo5.png') }}" alt="Profile Avatar" style="max-width:80px;border-radius:50%;margin-bottom:10px;">
+                </div>
+                <h1 style="color:#00e6d0;">{{ user.username if user else 'Demo User' }}</h1>
+                <p class="profile-role">Premium Member</p>
+                <div class="profile-stats" style="display:flex;justify-content:center;gap:24px;margin:18px 0;">
+                    <div class="stat-box">
+                        <span class="stat-value">{{ total_signals if total_signals else '0' }}</span>
+                        <span class="stat-label">Total Signals</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-value">{{ success_rate if success_rate else '0' }}%</span>
+                        <span class="stat-label">Success Rate</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-value">{{ member_since if member_since else '2024' }}</span>
+                        <span class="stat-label">Member Since</span>
+                    </div>
+                </div>
+            </div>
+            <div class="profile-main">
+                <div class="profile-details">
+                    <h2 style="color:#00e6d0;">Account Information</h2>
+                    <div class="detail-group"><label>Email</label><p>{{ user.email if user else 'demo@example.com' }}</p></div>
+                    <div class="detail-group"><label>Email Subscription</label><p class="status-active">Active</p></div>
+                    <div class="detail-group"><label>Subscription Plan</label><p class="plan-premium">Premium</p></div>
+                    <div class="detail-group"><a href="/subscription" class="btn" style="margin-top:8px;">Manage Subscription</a></div>
+                    <div class="detail-group"><label>Last Login</label><p class="last-login"><span class="date">{{ last_login_date if last_login_date else 'Today' }}</span> <span class="time">{{ last_login_time if last_login_time else '12:00 PM' }}</span></p></div>
+                </div>
+                <div class="profile-actions" style="margin-top:18px;text-align:center;">
+                    <button class="btn" onclick="editProfile()">Edit Profile</button>
+                    <button class="btn" onclick="changePassword()">Change Password</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<style>
+body {
+    font-family: 'Work Sans', Arial, sans-serif;
+    background: linear-gradient(135deg, #0f2027, #2c5364);
+    margin: 0;
+    color: #fff;
+}
+.logo {
+    max-width: 70px;
+    display: block;
+    margin: 0 auto 18px auto;
+}
+.sidebar {
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    width: 220px;
+    background: rgba(20,30,48,0.98);
+    box-shadow: 2px 0 10px #0004;
+    padding: 30px 20px 20px 20px;
+    z-index: 10;
+}
+.sidebar h2 {
+    margin: 0 0 30px 0;
+    font-size: 2rem;
+    letter-spacing: 2px;
+    color: #00e6d0;
+    text-shadow: 0 2px 8px #00e6d088;
+}
+.nav-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.nav-links li {
+    margin: 18px 0;
+}
+.nav-link {
+    display: flex;
+    align-items: center;
+    color: #fff;
+    text-decoration: none;
+    font-size: 1.1rem;
+    transition: color 0.2s;
+    font-weight: 500;
+}
+.nav-link i {
+    margin-right: 10px;
+    font-size: 1.2em;
+}
+.nav-link.active, .nav-link:hover {
+    color: #00e6d0;
+}
+.main {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 0;
+}
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+.welcome {
+    font-size: 2.2rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-shadow: 0 2px 8px #00e6d088;
+}
+.btn {
+    background: #00e6d0;
+    color: #222;
+    border: none;
+    border-radius: 22px;
+    padding: 10px 28px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin: 0 10px;
+    transition: background 0.2s;
+}
+.btn:hover {
+    background: #ff512f;
+    color: #fff;
+}
+.market-info-card {
+    background: rgba(255,255,255,0.07);
+    border-radius: 18px;
+    box-shadow: 0 2px 16px #0002;
+    padding: 28px 30px 28px 30px;
+    margin-bottom: 0;
+}
+.main-content-grid {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    min-height: unset;
+}
+</style>
+<script>
+function editProfile() { alert('Edit Profile modal coming soon!'); }
+function changePassword() { alert('Change Password modal coming soon!'); }
+</script>
+{% endblock %} 

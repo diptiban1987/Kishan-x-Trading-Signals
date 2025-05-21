@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}KishanX Trading{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/indian.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Modern Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="KishanX Logo" class="logo">
+            <h2>KishanX</h2>
+        </div>
+        <ul class="nav-links">
+            <li><a href="{{ url_for('dashboard') }}" class="nav-link{% if request.endpoint == 'dashboard' %} active{% endif %}"><i class="fas fa-chart-line"></i>Dashboard</a></li>
+            <li><a href="{{ url_for('indian_market') }}" class="nav-link{% if request.endpoint == 'indian_market' %} active{% endif %}"><i class="fas fa-rupee-sign"></i>Indian Market</a></li>
+            <li><a href="{{ url_for('otc_market') }}" class="nav-link{% if request.endpoint == 'otc_market' %} active{% endif %}"><i class="fas fa-exchange-alt"></i>OTC Market</a></li>
+            <li><a href="{{ url_for('index') }}" class="nav-link{% if request.endpoint == 'index' %} active{% endif %}"><i class="fas fa-globe"></i>Forex</a></li>
+            <li><a href="{{ url_for('profile') }}" class="nav-link{% if request.endpoint == 'profile' %} active{% endif %}"><i class="fas fa-user"></i>Profile</a></li>
+            <li><a href="{{ url_for('subscription') }}" class="nav-link{% if request.endpoint == 'subscription' %} active{% endif %}"><i class="fas fa-crown"></i>Subscription</a></li>
+            <li><a href="{{ url_for('legal') }}" class="nav-link{% if request.endpoint == 'legal' %} active{% endif %}"><i class="fas fa-gavel"></i>Legal</a></li>
+            <li><a href="{{ url_for('logout') }}" class="nav-link"><i class="fas fa-sign-out-alt"></i>Logout</a></li>
+        </ul>
+    </nav>
+
+    <div class="main">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <div class="footer">
+        <p>&copy; 2024 KishanX Trading. All rights reserved.</p>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html> 

@@ -1,0 +1,44 @@
+<div id="signals-bar" style="background:#e6f9f7;border-bottom:1px solid #00e6d0;padding:8px 0 4px 0;z-index:1000;">
+    <div style="max-width:1200px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:18px;justify-content:center;">
+        {% if signals %}
+            {% for signal in signals[:5] %}
+                <div style="padding:8px 16px;border-radius:12px;background:#fff;box-shadow:0 1px 4px rgba(0,230,208,0.08);margin:2px 0;min-width:220px;display:flex;flex-direction:column;align-items:flex-start;">
+                    <div style="font-size:1.08em;font-weight:600;margin-bottom:2px;">
+                        <span style="color:#888;">🕒 {{ signal.time }}</span>
+                        <span style="color:#2a4d8f;margin-left:8px;">{{ signal.pair }}</span>
+                    </div>
+                    <div style="font-size:1.15em;font-weight:700;margin-bottom:2px;">
+                        {% if signal.direction == 'CALL' %}
+                            <span style="color:#22c55e;">🟢↑ CALL</span>
+                        {% elif signal.direction == 'PUT' %}
+                            <span style="color:#ef4444;">🔴↓ PUT</span>
+                        {% else %}
+                            <span style="color:#888;">NEUTRAL</span>
+                        {% endif %}
+                        <span style="margin-left:10px;{% if signal.confidence is defined and signal.confidence|float > 90 %}color:#00e66a;font-weight:700;background:rgba(0,230,100,0.13);padding:2px 8px;border-radius:8px;{% else %}color:#00b894;{% endif %}">
+                            {{ signal.confidence }}%
+                        </span>
+                    </div>
+                    <div style="font-size:0.98em;color:#888;">Generated at: {{ signal.time }}</div>
+                    {% if signal.reasons %}
+                        <div style="font-size:0.95em;color:#008080;margin-top:2px;">Reasons: {{ signal.reasons|join(', ') }}</div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% else %}
+            <span style="color:#888;">No signals generated yet.</span>
+        {% endif %}
+    </div>
+    <div style="text-align:center;margin-top:8px;">
+        <button class="btn" style="margin-right:12px;" onclick="toggleSignalsBar()">Show/Hide</button>
+        <a href="{{ url_for('download') if request.path == '/' else (url_for('download_indian') if 'indian' in request.path else url_for('download_otc')) }}" class="btn" onclick="hideSignalsAndDownload()">🗎 Download PDF</a>
+    </div>
+</div>
+<script>
+function toggleSignalsBar() {
+    var bar = document.getElementById('signals-bar');
+    if (bar) {
+        if (bar.style.display === 'none') { bar.style.display = ''; } else { bar.style.display = 'none'; }
+    }
+}
+</script> 

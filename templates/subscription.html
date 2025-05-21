@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="sidebar">
+    <div class="sidebar-header">
+        <img src="{{ url_for('static', filename='images/logo2.png') }}" alt="KishanX Logo" class="logo">
+        <h2>KishanX</h2>
+    </div>
+    <ul class="nav-links">
+        <li><a href="{{ url_for('dashboard') }}" class="nav-link"><i class="fas fa-chart-line"></i>Dashboard</a></li>
+        <li><a href="{{ url_for('indian_market') }}" class="nav-link"><i class="fas fa-rupee-sign"></i>Indian Market</a></li>
+        <li><a href="{{ url_for('otc_market') }}" class="nav-link"><i class="fas fa-exchange-alt"></i>OTC Market</a></li>
+        <li><a href="{{ url_for('index') }}" class="nav-link"><i class="fas fa-globe"></i>Forex</a></li>
+        <li><a href="{{ url_for('profile') }}" class="nav-link"><i class="fas fa-user"></i>Profile</a></li>
+        <li><a href="{{ url_for('subscription') }}" class="nav-link active"><i class="fas fa-crown"></i>Subscription</a></li>
+        <li><a href="{{ url_for('legal') }}" class="nav-link"><i class="fas fa-gavel"></i>Legal</a></li>
+        <li><a href="{{ url_for('logout') }}" class="nav-link"><i class="fas fa-sign-out-alt"></i>Logout</a></li>
+    </ul>
+</div>
+<div class="main">
+    <div class="topbar">
+        <div class="welcome">Subscription Plans</div>
+    </div>
+    <div class="main-content-grid">
+        {% for plan in plans %}
+        <div class="plan-card {% if plan.popular %}popular{% endif %}">
+            <div class="plan-header">
+                <h2>{{ plan.name }}</h2>
+                <div class="price">
+                    <span class="amount">{{ plan.price }}</span>
+                    <span class="period">/{{ plan.period }}</span>
+                </div>
+            </div>
+            <ul class="features">
+                {% for feature in plan.features %}
+                <li><i class="fas fa-check"></i> {{ feature }}</li>
+                {% endfor %}
+            </ul>
+            <button class="subscribe-btn" data-plan="{{ plan.id }}">Subscribe Now</button>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+body {
+    font-family: 'Work Sans', Arial, sans-serif;
+    background: linear-gradient(135deg, #0f2027, #2c5364);
+    margin: 0;
+    color: #fff;
+    overflow-x: hidden;
+}
+.logo {
+    max-width: 70px;
+    display: block;
+    margin: 0 auto 18px auto;
+}
+.sidebar {
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    width: 220px;
+    background: rgba(20,30,48,0.98);
+    box-shadow: 2px 0 10px #0004;
+    padding: 30px 20px 20px 20px;
+    z-index: 10;
+    transition: transform 0.3s ease;
+}
+.sidebar h2 {
+    margin: 0 0 30px 0;
+    font-size: 2rem;
+    letter-spacing: 2px;
+    color: #00e6d0;
+    text-shadow: 0 2px 8px #00e6d088;
+}
+.nav-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.nav-links li {
+    margin: 18px 0;
+}
+.nav-link {
+    display: flex;
+    align-items: center;
+    color: #fff;
+    text-decoration: none;
+    font-size: 1.1rem;
+    transition: color 0.2s;
+    font-weight: 500;
+}
+.nav-link i {
+    margin-right: 10px;
+    font-size: 1.2em;
+}
+.nav-link.active, .nav-link:hover {
+    color: #00e6d0;
+}
+.main {
+    margin-left: 240px;
+    padding: 40px 30px 30px 30px;
+    min-height: 100vh;
+    transition: margin-left 0.3s ease;
+}
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+.welcome {
+    font-size: 2.2rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-shadow: 0 2px 8px #00e6d088;
+}
+.main-content-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+    margin-top: 40px;
+}
+.plan-card {
+    background: rgba(255,255,255,0.07);
+    border-radius: 18px;
+    box-shadow: 0 2px 16px #0002;
+    padding: 28px 30px;
+    text-align: center;
+    transition: transform 0.3s ease;
+    position: relative;
+}
+.plan-card:hover {
+    transform: translateY(-5px);
+}
+.plan-card.popular {
+    border: 2px solid #00e6d0;
+}
+.plan-card.popular::before {
+    content: 'Most Popular';
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #00e6d0;
+    color: #0f2027;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+.plan-header {
+    margin-bottom: 25px;
+}
+.plan-header h2 {
+    color: #00e6d0;
+    margin: 0 0 15px 0;
+    font-size: 1.8rem;
+}
+.price {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #fff;
+}
+.price .period {
+    font-size: 1rem;
+    color: #888;
+}
+.features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 25px 0;
+    text-align: left;
+}
+.features li {
+    margin: 12px 0;
+    color: #fff;
+    display: flex;
+    align-items: center;
+}
+.features li i {
+    color: #00e6d0;
+    margin-right: 10px;
+}
+.subscribe-btn {
+    background: #00e6d0;
+    color: #0f2027;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 25px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+}
+.subscribe-btn:hover {
+    background: #00c4b0;
+    transform: translateY(-2px);
+}
+
+/* Mobile menu button */
+.menu-toggle {
+    display: none;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 100;
+    background: #00e6d0;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    padding: 8px;
+}
+.menu-toggle span {
+    display: block;
+    width: 24px;
+    height: 2px;
+    background: #fff;
+    margin: 4px auto;
+    transition: all 0.3s ease;
+}
+
+/* Media Queries */
+@media (max-width: 1200px) {
+    .main-content-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 992px) {
+    .main {
+        margin-left: 0;
+        padding: 20px;
+    }
+    .sidebar {
+        transform: translateX(-100%);
+    }
+    .sidebar.active {
+        transform: translateX(0);
+    }
+    .menu-toggle {
+        display: block;
+    }
+    .menu-toggle.active span:nth-child(1) {
+        transform: rotate(45deg) translate(5px, 5px);
+    }
+    .menu-toggle.active span:nth-child(2) {
+        opacity: 0;
+    }
+    .menu-toggle.active span:nth-child(3) {
+        transform: rotate(-45deg) translate(5px, -5px);
+    }
+}
+
+@media (max-width: 768px) {
+    .main-content-grid {
+        grid-template-columns: 1fr;
+    }
+    .welcome {
+        font-size: 1.8rem;
+    }
+    .topbar {
+        flex-direction: column;
+        text-align: center;
+        gap: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .main {
+        padding: 15px;
+    }
+    .welcome {
+        font-size: 1.5rem;
+    }
+    .plan-card {
+        padding: 20px;
+    }
+    .plan-header h2 {
+        font-size: 1.5rem;
+    }
+    .price {
+        font-size: 2rem;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const menuToggle = document.createElement('button');
+    menuToggle.className = 'menu-toggle';
+    menuToggle.innerHTML = '<span></span><span></span><span></span>';
+    document.body.appendChild(menuToggle);
+
+    const sidebar = document.querySelector('.sidebar');
+    
+    menuToggle.addEventListener('click', function() {
+        this.classList.toggle('active');
+        sidebar.classList.toggle('active');
+    });
+
+    // Close sidebar when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
+            sidebar.classList.remove('active');
+            menuToggle.classList.remove('active');
+        }
+    });
+
+    // Handle subscription button clicks
+    document.querySelectorAll('.subscribe-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const planId = this.dataset.plan;
+            fetch(`/subscribe/${planId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = data.redirect;
+                } else {
+                    alert(data.error || 'Failed to process subscription');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while processing your subscription');
+            });
+        });
+    });
+});
+</script>
+{% endblock %} 

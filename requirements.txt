@@ -1,0 +1,44 @@
+# Web Framework
+Flask==2.0.2
+Werkzeug==2.0.2
+Jinja2==3.0.1
+flask-socketio==5.1.1
+python-socketio==5.4.0
+python-engineio==4.3.1
+eventlet==0.33.0
+
+# Data Processing and Analysis
+pandas==1.5.3
+pandas_ta
+numpy==1.23.5
+yfinance==0.2.18
+
+# API and HTTP
+requests==2.28.2
+alpha_vantage==2.3.1
+
+# PDF Generation
+reportlab==3.6.12
+
+# Database
+SQLAlchemy==1.4.41
+
+# Date and Time
+python-dateutil==2.8.2
+pytz==2022.7.1
+
+# Security
+cryptography==38.0.4
+
+# Utilities
+python-dotenv==0.21.1
+tqdm==4.64.1
+setuptools==65.5.1
+
+# Testing
+pytest==7.2.0
+pytest-cov==4.0.0
+
+# Development Tools
+black==22.12.0
+flake8==6.0.0

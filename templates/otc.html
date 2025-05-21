@@ -1,0 +1,428 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OTC Market - Kishan X Trading</title>
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/indian.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .signals-container {
+            display: block;
+            margin: 30px 0;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+        .signals-container.hidden {
+            display: none;
+            opacity: 0;
+        }
+        .signals-toggle {
+            margin: 20px 0;
+            text-align: center;
+        }
+        .signals-toggle .btn {
+            background: #2c5364;
+            min-width: 200px;
+            transition: background-color 0.3s ease;
+        }
+        .signals-toggle .btn:hover {
+            background: #1a2c3a;
+        }
+    </style>
+</head>
+<body>
+    <!-- Left Navigation -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <img src="{{ url_for('static', filename='images/logo2.png') }}" alt="KishanX Logo" class="logo">
+            <h2>KishanX</h2>
+        </div>
+        <ul class="nav-links">
+            <li><a href="{{ url_for('dashboard') }}" class="nav-link"><i class="fas fa-chart-line"></i>Dashboard</a></li>
+            <li><a href="{{ url_for('indian_market') }}" class="nav-link"><i class="fas fa-rupee-sign"></i>Indian Market</a></li>
+            <li><a href="{{ url_for('otc_market') }}" class="nav-link active"><i class="fas fa-exchange-alt"></i>OTC Market</a></li>
+            <li><a href="{{ url_for('index') }}" class="nav-link"><i class="fas fa-globe"></i>Forex</a></li>
+            <li><a href="{{ url_for('profile') }}" class="nav-link"><i class="fas fa-user"></i>Profile</a></li>
+            <li><a href="{{ url_for('subscription') }}" class="nav-link"><i class="fas fa-crown"></i>Subscription</a></li>
+            <li><a href="{{ url_for('legal') }}" class="nav-link"><i class="fas fa-gavel"></i>Legal</a></li>
+            <li><a href="{{ url_for('logout') }}" class="nav-link"><i class="fas fa-sign-out-alt"></i>Logout</a></li>
+        </ul>
+    </nav>
+
+    <div class="main">
+        <div class="topbar">
+            <div class="welcome">OTC Market Trading</div>
+            <div class="demo-timer" id="demo-timer">Demo Time Left: <span id="demo-time">--:--</span></div>
+        </div>
+
+        {% if signals %}
+        <div class="signals-toggle">
+            <button id="toggleSignals" class="btn">
+                <i class="fas fa-chevron-down"></i> Click to Hide Generated Signals
+            </button>
+        </div>
+        <div id="signalsContainer" class="signals-container">
+            <h3 style="color:#00e6d0; margin-bottom: 20px;">Generated Signals</h3>
+            <div class="signals-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                {% for signal in signals %}
+                <div class="signal-card" style="background: rgba(255,255,255,0.07); border-radius: 12px; padding: 20px; box-shadow: 0 2px 16px #0002;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <div style="font-size: 1.2rem; font-weight: bold;">{{ signal.pair }}</div>
+                        <div style="font-size: 1.1rem; color: #00e6d0;">{{ signal.time }}</div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                        {% if signal.direction == "CALL" %}
+                        <i class="fas fa-arrow-up" style="color: #4CAF50; font-size: 1.5rem;"></i>
+                        <span style="color: #4CAF50; font-weight: bold;">BUY</span>
+                        {% else %}
+                        <i class="fas fa-arrow-down" style="color: #f44336; font-size: 1.5rem;"></i>
+                        <span style="color: #f44336; font-weight: bold;">SELL</span>
+                        {% endif %}
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-chart-line" style="color: #00e6d0;"></i>
+                        <div style="font-size: 0.9rem; color: #aaa;">Signal Confidence: <span style="color: #fff;">{{ signal.confidence|default(0)|round(2) }}%</span></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div style="margin-top: 20px; text-align: center;">
+                <a href="{{ url_for('download_otc') }}" class="btn">Download Signals</a>
+            </div>
+        </div>
+        {% else %}
+        <div style="text-align: center; margin: 20px 0; color: #aaa;">
+            No signals generated yet. Use the form below to generate signals.
+        </div>
+        {% endif %}
+
+        <div class="main-content-grid">
+            <div class="market-info-card">
+                <h3 style="color:#00e6d0;">Current Rate</h3>
+                <div class="value" id="currentRate">{{ "%.5f"|format(current_rate) if current_rate else "N/A" }}</div>
+                <div class="price-info">Data Source: <span id="dataSource">{{ data_source }}</span></div>
+                <div class="price-info" style="color:#ffb300;font-size:0.95em;">Note: Price source may differ from broker's live OTC price.</div>
+                <hr style="border:1px solid #222; margin:18px 0;">
+                <div style="margin-bottom:10px;"><b>CALL</b><br>Black-Scholes Option Price<br><span style="color:#00e6d0;" id="callPrice">{{ "%.6f"|format(call_price) if call_price else "N/A" }}</span></div>
+                <div style="margin-bottom:10px;">Current Market Price<br><span class="current-market-price">{{ "%.5f"|format(current_rate) if current_rate else "N/A" }}</span></div>
+                <div style="margin-bottom:10px;"><b>PUT</b><br>Black-Scholes Option Price<br><span style="color:#00e6d0;" id="putPrice">{{ "%.6f"|format(put_price) if put_price else "N/A" }}</span></div>
+                <div style="margin-bottom:10px;">Current Market Price<br><span class="current-market-price">{{ "%.5f"|format(current_rate) if current_rate else "N/A" }}</span></div>
+                <div style="margin-bottom:10px;"><b>Broker:</b> <span id="selectedBroker">{{ selected_broker }}</span> &nbsp; | &nbsp; <b>Payout/Odds:</b> <span id="payoutVal">{{ (payout * 100) | round(0) if payout is not none else 'N/A' }}%</span></div>
+                <div style="margin-bottom:10px;"><b>Pricing Parameters:</b><br>Volatility (σ): <span id="volatilityVal">{{ volatility if volatility is not none else 'N/A' }}</span><br>Expiry (T, years): <span id="expiryVal">{{ expiry if expiry is not none else 'N/A' }}</span><br>Risk-free Rate (r): <span id="riskFreeVal">{{ risk_free_rate if risk_free_rate is not none else 'N/A' }}</span></div>
+            </div>
+            <div class="chart-card">
+                <h3 style="color:#00e6d0;">Real-Time Price Chart</h3>
+                <canvas id="priceChart" style="height:320px;width:100%;background:transparent;"></canvas>
+                <div id="noDataMsg">No real-time price data available.</div>
+            </div>
+            <div class="form-card">
+                <h3 style="color:#00e6d0;">Kishan X Signal Generator</h3>
+                <form method="POST" action="{{ url_for('otc_market') }}">
+                    <div class="form-group">
+                        <label class="form-label">Pair:</label>
+                        <select class="form-select" id="pairSelect" name="pair" onchange="updateMarketData(this.value)">
+                            {% for pair in pairs %}
+                            <option value="{{ pair }}" {% if pair == selected_pair %}selected{% endif %}>{{ pair }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Broker:</label>
+                        <select class="form-select" id="brokerSelect" name="broker">
+                            {% for broker in brokers %}
+                            <option value="{{ broker }}" {% if broker == selected_broker %}selected{% endif %}>{{ broker }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Signal Type:</label>
+                        <select class="form-select" id="signal_type" name="signal_type">
+                            <option value="CALL">CALL</option>
+                            <option value="PUT">PUT</option>
+                            <option value="BOTH">BOTH</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Start Time:</label>
+                        <div class="time-inputs">
+                            <select class="form-select" id="start_hour" name="start_hour">
+                                {% for h in range(0,24) %}
+                                <option value="{{ '%02d' % h }}">{{ '%02d' % h }}</option>
+                                {% endfor %}
+                            </select>
+                            <select class="form-select" id="start_minute" name="start_minute">
+                                {% for m in range(0,60,5) %}
+                                <option value="{{ '%02d' % m }}">{{ '%02d' % m }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">End Time:</label>
+                        <div class="time-inputs">
+                            <select class="form-select" id="end_hour" name="end_hour">
+                                {% for h in range(0,24) %}
+                                <option value="{{ '%02d' % h }}">{{ '%02d' % h }}</option>
+                                {% endfor %}
+                            </select>
+                            <select class="form-select" id="end_minute" name="end_minute">
+                                {% for m in range(0,60,5) %}
+                                <option value="{{ '%02d' % m }}">{{ '%02d' % m }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn">Generate</button>
+                </form>
+            </div>
+        </div>
+        <div class="footer">
+            &copy; 2024 KishanX Trading. All rights reserved.
+        </div>
+    </div>
+
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+    // Demo timer fetch
+    function updateDemoTime() {
+        fetch("/get_demo_time").then(r => r.json()).then(data => {
+            document.getElementById("demo-time").textContent = data.time_left;
+        });
+    }
+    setInterval(updateDemoTime, 1000);
+    updateDemoTime();
+
+    let priceChart = null;
+    let chartInitialized = false;
+
+    function updateMarketData(pair) {
+        window.location.href = `{{ url_for('otc_market') }}?pair=${pair}`;
+    }
+
+    function updateInfoCardAndChart(data) {
+        // Update info card
+        let priceValue = document.getElementById('currentRate');
+        let marketPrices = document.querySelectorAll('.current-market-price');
+        let newRate = (data && typeof data.rate === 'number') ? data.rate.toFixed(5) : 'N/A';
+        if (priceValue) priceValue.textContent = newRate;
+        marketPrices.forEach(function(el) { el.textContent = newRate; });
+        if (document.getElementById('callPrice')) document.getElementById('callPrice').textContent = data.call_price ? data.call_price.toFixed(6) : 'N/A';
+        if (document.getElementById('putPrice')) document.getElementById('putPrice').textContent = data.put_price ? data.put_price.toFixed(6) : 'N/A';
+        if (document.getElementById('selectedBroker')) document.getElementById('selectedBroker').textContent = data.selected_broker || '{{ selected_broker }}';
+        if (document.getElementById('payoutVal')) document.getElementById('payoutVal').textContent = data.payout ? Math.round(data.payout * 100) + '%' : 'N/A';
+        if (document.getElementById('volatilityVal')) document.getElementById('volatilityVal').textContent = data.volatility ? data.volatility.toFixed(2) : 'N/A';
+        if (document.getElementById('expiryVal')) document.getElementById('expiryVal').textContent = data.expiry ? data.expiry.toFixed(4) : 'N/A';
+        if (document.getElementById('riskFreeVal')) document.getElementById('riskFreeVal').textContent = data.risk_free_rate ? data.risk_free_rate.toFixed(4) : 'N/A';
+        if (document.getElementById('dataSource')) document.getElementById('dataSource').textContent = data.source || 'Unknown';
+        // Chart update with indicators if available
+        if (data && data.indicators) {
+            // Limit to last 100 points for clarity
+            const labels = (data.labels || []).slice(-100);
+            const prices = (data.prices || []).slice(-100);
+            const sma = (data.indicators.sma || []).slice(-100);
+            const ema = (data.indicators.ema || []).slice(-100);
+            const bb_upper = (data.indicators.bollinger_upper || []).slice(-100);
+            const bb_lower = (data.indicators.bollinger_lower || []).slice(-100);
+            if (!chartInitialized) {
+                initializeChart(labels, prices, sma, ema, bb_upper, bb_lower);
+                chartInitialized = true;
+            } else {
+                priceChart.data.labels = labels;
+                priceChart.data.datasets[0].data = prices;
+                priceChart.data.datasets[1].data = sma;
+                priceChart.data.datasets[2].data = ema;
+                priceChart.data.datasets[3].data = bb_upper;
+                priceChart.data.datasets[4].data = bb_lower;
+                priceChart.update();
+            }
+            document.getElementById('noDataMsg').style.display = 'none';
+        } else if (data && typeof data.rate === 'number') {
+            // Fallback: just show price line
+            if (!chartInitialized) {
+                initializeChart([new Date().toLocaleTimeString()], [data.rate]);
+                chartInitialized = true;
+            } else {
+                if (priceChart.data.labels.length > 100) {
+                    priceChart.data.labels.shift();
+                    priceChart.data.datasets[0].data.shift();
+                }
+                priceChart.data.labels.push(new Date().toLocaleTimeString());
+                priceChart.data.datasets[0].data.push(data.rate);
+                priceChart.update();
+            }
+            document.getElementById('noDataMsg').style.display = 'none';
+        } else {
+            document.getElementById('noDataMsg').style.display = 'block';
+        }
+    }
+
+    function fetchAndUpdate() {
+        const pair = document.getElementById('pairSelect').value;
+        fetch(`/api/price/${pair}`)
+            .then(response => response.json())
+            .then(data => {
+                updateInfoCardAndChart(data);
+            })
+            .catch(() => {
+                updateInfoCardAndChart(null);
+            });
+    }
+
+    // Chart.js plugin for vertical dashed line on hover
+    const dashedLinePlugin = {
+        id: 'dashedLineOnHover',
+        afterDraw: function(chart) {
+            if (chart.tooltip?._active && chart.tooltip._active.length) {
+                const ctx = chart.ctx;
+                ctx.save();
+                const activePoint = chart.tooltip._active[0];
+                ctx.beginPath();
+                ctx.setLineDash([5, 5]);
+                ctx.moveTo(activePoint.element.x, chart.chartArea.top);
+                ctx.lineTo(activePoint.element.x, chart.chartArea.bottom);
+                ctx.lineWidth = 1.5;
+                ctx.strokeStyle = '#ff512f';
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+    };
+
+    function initializeChart(labels = [], prices = [], sma = [], ema = [], bb_upper = [], bb_lower = []) {
+        const canvas = document.getElementById('priceChart');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        let datasets = [
+            {
+                label: 'Price',
+                data: prices,
+                borderColor: '#00e6d0',
+                backgroundColor: 'rgba(0, 230, 208, 0.1)',
+                tension: 0.1,
+                fill: false,
+                pointRadius: 1,
+                pointHoverRadius: 3,
+                borderWidth: 2
+            }
+        ];
+        if (sma.length && ema.length && bb_upper.length && bb_lower.length) {
+            datasets.push(
+                {
+                    label: 'SMA',
+                    data: sma,
+                    borderColor: '#ffb300',
+                    borderDash: [6, 4],
+                    fill: false,
+                    pointRadius: 0,
+                    borderWidth: 1.5
+                },
+                {
+                    label: 'EMA',
+                    data: ema,
+                    borderColor: '#e91e63',
+                    borderDash: [2, 2],
+                    fill: false,
+                    pointRadius: 0,
+                    borderWidth: 1.5
+                },
+                {
+                    label: 'Bollinger Upper',
+                    data: bb_upper,
+                    borderColor: '#42a5f5',
+                    borderDash: [8, 4],
+                    fill: false,
+                    pointRadius: 0,
+                    borderWidth: 1
+                },
+                {
+                    label: 'Bollinger Lower',
+                    data: bb_lower,
+                    borderColor: '#42a5f5',
+                    borderDash: [8, 4],
+                    fill: false,
+                    pointRadius: 0,
+                    borderWidth: 1
+                }
+            );
+        }
+        priceChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#fff'
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#fff'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#fff'
+                        }
+                    }
+                }
+            },
+            plugins: [dashedLinePlugin]
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        fetchAndUpdate();
+        setInterval(fetchAndUpdate, 5000);
+
+        // Toggle signals visibility
+        const toggleButton = document.getElementById('toggleSignals');
+        const signalsContainer = document.getElementById('signalsContainer');
+        
+        if (toggleButton && signalsContainer) {
+            toggleButton.addEventListener('click', function() {
+                const isVisible = !signalsContainer.classList.contains('hidden');
+                
+                if (isVisible) {
+                    signalsContainer.classList.add('hidden');
+                    toggleButton.innerHTML = '<i class="fas fa-chevron-down"></i> Click to Show Generated Signals';
+                } else {
+                    signalsContainer.classList.remove('hidden');
+                    toggleButton.innerHTML = '<i class="fas fa-chevron-up"></i> Click to Hide Generated Signals';
+                }
+            });
+        }
+    });
+    </script>
+</body>
+</html>
+{% endblock %} 

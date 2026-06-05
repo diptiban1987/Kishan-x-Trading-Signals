@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Legal & Compliance - {{ platform_name }}{% endblock %}
+
+{% block content %}
+<div class="legal-container animate-fade-in">
+  <div style="text-align:center;margin-bottom:48px;">
+    <h1 style="font-size:2rem;font-weight:700;margin-bottom:8px;">Legal &amp; Compliance</h1>
+    <p style="color:var(--text-secondary);">Important information about your rights and our policies</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>Risk Disclosure</h2>
+    <div class="risk-warning">
+      <p><strong>Trading in financial markets involves substantial risk of loss. You should carefully consider whether trading is appropriate for you given your financial situation, risk tolerance, and experience level.</strong></p>
+    </div>
+    <ul>
+      <li>Trading involves substantial risk of loss, including potential loss of all capital invested</li>
+      <li>AI signals and predictions are probabilistic and not guaranteed</li>
+      <li>Past performance is not indicative of future results</li>
+      <li>Demo trading performance does not reflect live trading conditions</li>
+      <li>Leverage can amplify both gains and losses</li>
+      <li>Jurisdiction restrictions may apply to your access</li>
+      <li>No guaranteed profits are promised or implied</li>
+    </ul>
+  </div>
+
+  <div class="legal-section">
+    <h2>Terms of Service</h2>
+    <p>By accessing and using {{ platform_name }}, you agree to comply with and be bound by the following terms and conditions.</p>
+    <h3>1. Service Description</h3>
+    <p>{{ platform_name }} provides trading signals, market analysis tools, and automated trading capabilities. These are for informational and educational purposes only and should not be considered as financial advice.</p>
+    <h3>2. User Responsibilities</h3>
+    <ul>
+      <li>Maintain the confidentiality of your account credentials</li>
+      <li>Provide accurate and complete registration information</li>
+      <li>Use the services in compliance with applicable laws and regulations</li>
+      <li>Not share your account access with unauthorized parties</li>
+      <li>Not use the platform for money laundering or illegal purposes</li>
+    </ul>
+    <h3>3. Subscription and Payments</h3>
+    <p>Subscription fees are non-refundable unless required by applicable law. We reserve the right to modify pricing with prior notice to active subscribers.</p>
+    <h3>4. Intellectual Property</h3>
+    <p>All content, including trading signals, analysis, software, and algorithms, is the exclusive property of {{ platform_name }}.</p>
+    <h3>5. Limitation of Liability</h3>
+    <p>{{ platform_name }} is not liable for any trading losses, damages, or missed opportunities arising from the use of our services. We do not guarantee the accuracy, completeness, or timeliness of signals or analysis.</p>
+    <h3>6. Termination</h3>
+    <p>We reserve the right to suspend or terminate access for violations of these terms or applicable laws.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>Privacy Policy</h2>
+    <p>Your privacy is critically important to us. This policy explains how we collect, use, store, and protect your personal information.</p>
+    <h3>1. Information We Collect</h3>
+    <ul>
+      <li>Registration information (name, email, username)</li>
+      <li>Trading preferences and strategy configurations</li>
+      <li>Usage data and platform interaction analytics</li>
+      <li>Device and browser information for security</li>
+      <li>Payment information (processed securely through third-party providers)</li>
+    </ul>
+    <h3>2. How We Use Your Information</h3>
+    <ul>
+      <li>Provide and improve our trading services</li>
+      <li>Process subscriptions and payments</li>
+      <li>Send important service and security notifications</li>
+      <li>Comply with legal and regulatory obligations</li>
+      <li>Detect and prevent fraudulent or unauthorized activity</li>
+    </ul>
+    <h3>3. Data Protection</h3>
+    <p>We implement industry-standard security measures including encryption, access controls, and regular security audits to protect your information.</p>
+    <h3>4. Data Retention</h3>
+    <p>We retain your data for as long as your account is active and as required by applicable regulations. You may request deletion of your data subject to legal requirements.</p>
+    <h3>5. Third-Party Services</h3>
+    <p>We may share data with trusted third-party service providers for payment processing, hosting, and analytics. These providers are contractually bound to protect your data.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>Refund Policy</h2>
+    <p>We strive to ensure satisfaction with our services. Our refund policy is as follows:</p>
+    <ul>
+      <li>Monthly subscription plans are non-refundable after activation</li>
+      <li>Annual plans may be eligible for pro-rata refunds within 14 days of purchase</li>
+      <li>Refunds are processed within 5-10 business days</li>
+      <li>Refunds are returned to the original payment method</li>
+      <li>Promotional or discounted purchases may have different terms</li>
+    </ul>
+  </div>
+
+  <div class="legal-section">
+    <h2>AML &amp; KYC Policy</h2>
+    <p>{{ platform_name }} is committed to complying with all applicable anti-money laundering (AML) and know-your-customer (KYC) regulations.</p>
+    <ul>
+      <li>We may require identity verification for certain account activities</li>
+      <li>Suspicious transactions will be reported to relevant authorities</li>
+      <li>We maintain records of transactions as required by law</li>
+      <li>We reserve the right to restrict accounts pending verification</li>
+    </ul>
+  </div>
+
+  <div class="legal-section">
+    <h2>Cookie Policy</h2>
+    <p>We use cookies and similar technologies to enhance your experience, analyze usage, and provide personalized content.</p>
+    <ul>
+      <li><strong>Essential cookies:</strong> Required for platform functionality</li>
+      <li><strong>Analytics cookies:</strong> Help us understand how you use the platform</li>
+      <li><strong>Preference cookies:</strong> Remember your settings and preferences</li>
+      <li>You can control cookie settings through your browser preferences</li>
+    </ul>
+  </div>
+
+  <div class="legal-section">
+    <h2>Disclaimer</h2>
+    <div class="risk-warning">
+      <p>The information provided by {{ platform_name }} is for general informational and educational purposes only. All information is provided in good faith; however, we make no representation or warranty of any kind, express or implied, regarding the accuracy, adequacy, validity, reliability, availability, or completeness of any information.</p>
+      <p><strong>{{ platform_name }} is not a financial advisor, broker, or investment firm. We do not provide personalized financial advice, and nothing on this platform should be construed as such.</strong></p>
+      <p>You should consult with a qualified financial professional before making any trading decisions. Trading involves risk of financial loss.</p>
+    </div>
+  </div>
+
+  <div class="legal-section">
+    <h2>Data Processing Policy</h2>
+    <p>This policy outlines how we process personal data in compliance with applicable data protection regulations including GDPR and CCPA.</p>
+    <ul>
+      <li>Data is processed lawfully, fairly, and transparently</li>
+      <li>Data is collected for specified, explicit, and legitimate purposes</li>
+      <li>Data is adequate, relevant, and limited to what is necessary</li>
+      <li>Data is accurate and kept up to date</li>
+      <li>Data is kept for no longer than necessary</li>
+      <li>Data is processed securely with appropriate technical measures</li>
+      <li>You have the right to access, rectify, and erase your personal data</li>
+    </ul>
+  </div>
+</div>
+
+<style>
+.legal-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+.legal-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+  transition: border-color var(--transition-base);
+}
+.legal-section:hover {
+  border-color: var(--border-hover);
+}
+.legal-section h2 {
+  color: var(--accent-blue);
+  margin-bottom: 1.25rem;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+.legal-section h3 {
+  color: var(--text-primary);
+  margin: 1.5rem 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+.legal-section p {
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+.legal-section ul {
+  padding-left: 1.25rem;
+  margin: 0.75rem 0;
+}
+.legal-section li {
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 0.4rem;
+  font-size: 0.9rem;
+}
+.risk-warning {
+  background: rgba(255, 77, 79, 0.08);
+  border-left: 3px solid var(--accent-red);
+  padding: 1rem 1.25rem;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  margin-bottom: 1rem;
+}
+.risk-warning p {
+  color: var(--accent-red);
+  font-size: 0.9rem;
+  margin-bottom: 0;
+}
+@media (max-width: 768px) {
+  .legal-container { padding: 1rem; }
+  .legal-section { padding: 1.25rem; }
+}
+</style>
+{% endblock %} 

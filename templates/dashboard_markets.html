@@ -1,0 +1,55 @@
+{% extends "dashboard.html" %}
+
+{% block content %}
+<div class="animate-fade-in">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
+    <div class="dash-table-card">
+      <h3>By Pair</h3>
+      {% if pair_labels and pair_counts %}
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        {% for pair, count in zip(pair_labels, pair_counts) %}
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg-primary);border-radius:var(--radius-sm);">
+          <span style="font-weight:500;color:var(--text-primary);font-size:0.9rem;">{{ pair }}</span>
+          <span class="badge badge-blue">{{ count }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state" style="padding:24px;">
+        <div class="empty-state-icon"><i class="fas fa-chart-pie"></i></div>
+        <div class="empty-state-title">No Data</div>
+        <div class="empty-state-desc">No pair data available.</div>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="dash-table-card">
+      <h3>By Direction</h3>
+      {% if direction_labels and direction_counts %}
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        {% for direction, count in zip(direction_labels, direction_counts) %}
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg-primary);border-radius:var(--radius-sm);">
+          <span style="font-weight:500;color:var(--text-primary);font-size:0.9rem;">
+            {% if direction == 'CALL' %}<i class="fas fa-arrow-up text-green"></i>{% else %}<i class="fas fa-arrow-down text-red"></i>{% endif %}
+            {{ direction }}
+          </span>
+          <span class="badge {% if direction == 'CALL' %}badge-green{% else %}badge-red{% endif %}">{{ count }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state" style="padding:24px;">
+        <div class="empty-state-icon"><i class="fas fa-arrows-alt-h"></i></div>
+        <div class="empty-state-title">No Data</div>
+        <div class="empty-state-desc">No direction data available.</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div style="display:flex;gap:8px;">
+    <a href="{{ url_for('index') }}" class="btn btn-primary"><i class="fas fa-chart-line"></i> Generate Signals</a>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> Back</a>
+  </div>
+</div>
+{% endblock %}

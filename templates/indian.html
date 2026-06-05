@@ -1,0 +1,3386 @@
+{% extends "base.html" %}
+
+{% block title %}Indian Market - KishanX Trading{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Real-time Data Styles */
+    .realtime-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    
+    .market-selector {
+        width: 150px;
+    }
+    
+    .realtime-data-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .data-card {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        padding: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .data-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        border-color: rgba(0, 230, 208, 0.3);
+    }
+    
+    .data-label {
+        font-size: 0.8rem;
+        color: #b0b0b0;
+        margin-bottom: 5px;
+    }
+    
+    .data-value {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #00e6d0;
+    }
+    
+    .data-value.positive {
+        color: #4ecdc4;
+    }
+    
+    .data-value.negative {
+        color: #ff6b6b;
+    }
+    
+    .signal-container {
+        margin-top: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .signal-header {
+        font-size: 1rem;
+        color: #00e6d0;
+        margin-bottom: 10px;
+        font-weight: 600;
+    }
+    
+    .signal-box {
+        display: flex;
+        align-items: center;
+        padding: 15px;
+        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .signal-box.buy {
+        background: rgba(46, 204, 113, 0.2);
+        border-color: rgba(46, 204, 113, 0.5);
+    }
+    
+    .signal-box.sell {
+        background: rgba(231, 76, 60, 0.2);
+        border-color: rgba(231, 76, 60, 0.5);
+    }
+    
+    .signal-box.neutral {
+        background: rgba(241, 196, 15, 0.2);
+        border-color: rgba(241, 196, 15, 0.5);
+    }
+    
+    .signal-icon {
+        font-size: 1.5rem;
+        margin-right: 15px;
+    }
+    
+    .signal-text {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #fff;
+    }
+    
+    .signal-box.buy .signal-text {
+        color: #2ecc71;
+    }
+    
+    .signal-box.sell .signal-text {
+        color: #e74c3c;
+    }
+    
+    .signal-box.neutral .signal-text {
+        color: #f1c40f;
+    }
+    
+    /* Market Status Styles */
+    .market-status {
+        display: flex;
+        align-items: center;
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-top: 10px;
+        padding: 5px 10px;
+        border-radius: 5px;
+    }
+    
+    .market-status.open {
+        color: #2ecc71;
+    }
+    
+    .market-status.closed {
+        color: #e74c3c;
+    }
+    
+    /* Trading Time Button Styles */
+    .trading-time-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        background: linear-gradient(135deg, #b21f1f, #1a2a6c) !important;
+    }
+    
+    .close-btn:hover {
+        opacity: 1 !important;
+    }
+    
+    .trading-time-modal.hidden {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+    
+    .status-indicator {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 8px;
+    }
+    
+    .status-indicator.open {
+        background-color: #2ecc71;
+        box-shadow: 0 0 5px #2ecc71;
+    }
+    
+    .status-indicator.closed {
+        background-color: #e74c3c;
+        box-shadow: 0 0 5px #e74c3c;
+    }
+    
+    .market-message {
+        font-size: 0.8rem;
+        color: #aaa;
+        margin-top: 5px;
+        font-style: italic;
+    }
+    
+    /* Responsive styles */
+    @media (max-width: 768px) {
+        .realtime-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .market-selector {
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .realtime-data-grid {
+            grid-template-columns: 1fr;
+        }
+        .indian-container {
+            padding: 1rem;
+        }
+    }
+    
+    .indian-container {
+        padding: 1rem;
+        min-height: 100vh;
+    }
+    .main-content-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+        align-items: flex-start;
+    }
+    .market-info-card, .chart-card, .form-card {
+        background: var(--bg-card);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid var(--border-color);
+        transition: all var(--transition-base);
+    }
+    .market-info-card:hover, .chart-card:hover, .form-card:hover {
+        border-color: var(--border-hover);
+        box-shadow: var(--shadow-md);
+        background: var(--bg-card-hover);
+    }
+    .market-info-card {
+        min-width: 220px;
+    }
+    .chart-card {
+        min-width: 320px;
+        height: 420px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+    }
+    .form-card {
+        min-width: 260px;
+    }
+    .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        background: rgba(255,255,255,0.03);
+        padding: 16px 20px;
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+    }
+    .welcome {
+        font-size: 2.2rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-shadow: 0 2px 8px #00e6d088;
+        background: linear-gradient(45deg, #00e6d0, #00b4d8);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+    .demo-timer {
+        font-size: 1.3rem;
+        font-weight: 700;
+        background: linear-gradient(90deg, #ff6b6b, #4ecdc4);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        padding: 12px 28px;
+        border-radius: 30px;
+        box-shadow: 0 0 20px rgba(255, 107, 107, 0.3);
+        margin-left: 20px;
+        display: inline-block;
+        animation: pulse 2s infinite;
+        border: 2px solid rgba(255, 107, 107, 0.3);
+    }
+    @keyframes pulse {
+        0% { transform: scale(1); box-shadow: 0 0 20px rgba(255, 107, 107, 0.3); }
+        50% { transform: scale(1.05); box-shadow: 0 0 30px rgba(255, 107, 107, 0.5); }
+        100% { transform: scale(1); box-shadow: 0 0 20px rgba(255, 107, 107, 0.3); }
+    }
+    .value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #00e6d0;
+        text-shadow: 0 2px 8px rgba(0, 230, 208, 0.3);
+        margin: 15px 0;
+        text-align: center;
+        background: rgba(0, 230, 208, 0.1);
+        padding: 20px;
+        border-radius: 15px;
+        border: 2px solid rgba(0, 230, 208, 0.2);
+    }
+    .price-info {
+        text-align: center;
+        color: #b0b0b0;
+        margin-bottom: 25px;
+        font-size: 0.9rem;
+    }
+    .parameters-block, .indicators-block {
+        margin-top: 25px;
+    }
+    .parameters-block h4, .indicators-block h4 {
+        color: #00e6d0;
+        margin-bottom: 15px;
+        font-size: 1.1rem;
+        border-bottom: 2px solid rgba(0, 230, 208, 0.3);
+        padding-bottom: 8px;
+    }
+    .parameter-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .parameter-row:last-child {
+        border-bottom: none;
+    }
+    .parameter-row span:first-child {
+        color: #b0b0b0;
+        font-size: 0.9rem;
+    }
+    .parameter-row span:last-child {
+        color: #00e6d0;
+        font-weight: 600;
+    }
+    .indicator-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+    .indicator-card {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 15px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    .indicator-card:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(0, 230, 208, 0.3);
+        transform: translateY(-2px);
+    }
+    .indicator-title {
+        font-size: 0.8rem;
+        color: #b0b0b0;
+        margin-bottom: 8px;
+        font-weight: 500;
+    }
+    .indicator-value {
+        font-size: 1.1rem;
+        color: #00e6d0;
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+    .indicator-signal {
+        font-size: 0.7rem;
+        color: #4ecdc4;
+        font-weight: 500;
+    }
+    .price-info-note {
+        margin-top: 20px;
+        padding: 15px;
+        background: rgba(255, 193, 7, 0.1);
+        border-radius: 10px;
+        border: 1px solid rgba(255, 193, 7, 0.3);
+        color: #ffc107;
+        font-size: 0.85rem;
+        text-align: center;
+    }
+    .form-group {
+        margin-bottom: 20px;
+    }
+    .form-label {
+        display: block;
+        color: #00e6d0;
+        margin-bottom: 8px;
+        font-weight: 500;
+        font-size: 0.95rem;
+    }
+    .form-select, .form-control {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        background: rgba(26, 38, 54, 0.8);
+        color: #fff;
+        appearance: none;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+    }
+    .form-select:focus, .form-control:focus {
+        outline: none;
+        border-color: #00e6d0;
+        background: rgba(26, 38, 54, 0.9);
+        box-shadow: 0 0 15px rgba(0, 230, 208, 0.3);
+    }
+    .form-select option {
+        background: #1a2636;
+        color: #fff;
+        padding: 10px;
+    }
+    .generate-btn {
+        background: linear-gradient(45deg, #00e6d0, #00b4d8);
+        color: #fff;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 25px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        width: 100%;
+        margin-top: 20px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .generate-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 230, 208, 0.4);
+    }
+    .generate-btn:active {
+        transform: translateY(0);
+    }
+    .chart-card h3, .form-card h3 {
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    #noDataMsg {
+        text-align: center;
+        color: #b0b0b0;
+        font-style: italic;
+        margin-top: 20px;
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        border: 1px dashed rgba(255, 255, 255, 0.2);
+    }
+    .time-inputs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+    .time-inputs .form-select {
+        padding: 10px 12px;
+        font-size: 0.9rem;
+    }
+    .signals-toggle {
+        text-align: center;
+        margin: 30px 0;
+    }
+    .signals-toggle .btn {
+        background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+        color: #fff;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 20px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .signals-toggle .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(255, 107, 107, 0.4);
+    }
+    .signals-container {
+        background: rgba(255,255,255,0.05);
+        border-radius: 15px;
+        padding: 30px;
+        margin-top: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+    }
+    .signal-card {
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .signal-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        border-color: rgba(0, 230, 208, 0.3);
+    }
+         @media (max-width: 1200px) {
+         .main-content-grid {
+             grid-template-columns: 1fr;
+         }
+         .chart-card, .market-info-card, .form-card {
+             min-width: unset;
+             width: 100%;
+         }
+     }
+     
+     /* Trading Dashboard Styles */
+     .trading-dashboard {
+         animation: fadeInUp 0.5s ease-out;
+     }
+     
+     .trade-card {
+         transition: all 0.3s ease;
+     }
+     
+     .trade-card:hover {
+         transform: translateY(-3px);
+         box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+         border-color: rgba(0, 230, 208, 0.3);
+     }
+     
+     .stat-card {
+         transition: all 0.3s ease;
+     }
+     
+     .stat-card:hover {
+         transform: translateY(-2px);
+         border-color: rgba(0, 230, 208, 0.3);
+         box-shadow: 0 5px 15px rgba(0, 230, 208, 0.2);
+     }
+     
+     .closed-trade-item {
+         transition: all 0.3s ease;
+     }
+     
+     .closed-trade-item:hover {
+         background: rgba(0,0,0,0.3) !important;
+         transform: translateX(5px);
+     }
+     
+     @keyframes fadeInUp {
+         from {
+             opacity: 0;
+             transform: translateY(20px);
+         }
+         to {
+             opacity: 1;
+             transform: translateY(0);
+         }
+     }
+     
+     @keyframes pulse {
+         0% { transform: scale(1); }
+         50% { transform: scale(1.05); }
+         100% { transform: scale(1); }
+     }
+     
+     /* Responsive dashboard */
+     @media (max-width: 768px) {
+         .dashboard-stats {
+             grid-template-columns: repeat(2, 1fr);
+         }
+         
+         .trades-grid {
+             grid-template-columns: 1fr;
+         }
+         
+         .dashboard-header {
+             flex-direction: column;
+             gap: 15px;
+             align-items: flex-start;
+         }
+         
+         .dashboard-controls {
+             width: 100%;
+             justify-content: space-between;
+         }
+     }
+
+     /* Live Ticker Flash Animations */
+     @keyframes tick-up {
+         0% { background-color: rgba(40, 167, 69, 0.45); }
+         100% { background-color: transparent; }
+     }
+     @keyframes tick-down {
+         0% { background-color: rgba(220, 53, 69, 0.45); }
+         100% { background-color: transparent; }
+     }
+     .tick-up-animate {
+         animation: tick-up 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+     }
+     .tick-down-animate {
+         animation: tick-down 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+     }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="indian-container">
+    <div class="market-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 1.5rem; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); padding: 16px 20px; border-radius: 12px;">
+        <div>
+            <h1 style="margin: 0; font-size: 1.6rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-rupee-sign" style="color: #00e676;"></i> Indian Market
+            </h1>
+            <p style="margin: 4px 0 0 0; color: var(--text-muted); font-size: 0.9rem;">Real-time Indian market data, NSE & BSE index signals, and auto-trading</p>
+        </div>
+        <div class="flex-center gap-sm flex-wrap" style="display: flex; align-items: center; gap: 12px;">
+            <div class="demo-timer-badge" id="demo-timer" style="padding: 6px 12px; background: rgba(255, 107, 107, 0.15); border: 1px solid rgba(255, 107, 107, 0.3); border-radius: 8px; font-size: 0.8rem; font-weight: bold; color: #ff6b6b; display: flex; align-items: center; gap: 6px;">
+                <i class="fas fa-clock"></i> Demo Time Left: <span id="demo-time">00:00:00</span>
+            </div>
+            <div class="flex-center gap-sm" style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: rgba(0,0,0,0.25); border-radius: 8px; border: 1px solid var(--border-color);">
+                <span class="text-muted" style="font-size: 0.8rem; color: #94A3B8;">Auto:</span>
+                <span id="auto-trading-status" style="color: #ef5350; font-weight: 700; font-size: 0.8rem; text-transform: uppercase; margin-right: 6px;">Stopped</span>
+                <button id="start-auto-trading" onclick="startAutoTrading()" class="btn" style="width: auto; padding: 4px 10px; font-size: 0.75rem; background: linear-gradient(135deg, #00e6d0, #00b4d8); color: #000; border-radius: 6px; border: none; font-weight: bold; cursor: pointer;">▶️ Start</button>
+                <button id="stop-auto-trading" onclick="stopAutoTrading()" class="btn" style="display: none; width: auto; padding: 4px 10px; font-size: 0.75rem; background: #ef5350; color: #fff; border-radius: 6px; border: none; font-weight: bold; cursor: pointer;">⏹️ Stop</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Real-Time Trading Dashboard -->
+    <div class="trading-dashboard" style="background: rgba(255,255,255,0.08); border-radius: 15px; padding: 25px; margin-bottom: 30px; border: 1px solid rgba(0, 230, 208, 0.3); backdrop-filter: blur(10px);">
+        <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <h3 style="color: #00e6d0; margin: 0; font-size: 1.4rem;">
+                    🚀 Live Trading Dashboard
+                </h3>
+                <div class="mode-indicator">
+                    <span id="current-mode-badge" class="badge" style="font-size: 0.9rem; padding: 8px 12px; border-radius: 20px; background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; font-weight: bold;">
+                        <i class="fas fa-play-circle"></i> DEMO MODE
+                    </span>
+                </div>
+            </div>
+            <div class="dashboard-controls" style="display: flex; gap: 10px; align-items: center;">
+                <span class="status-indicator" id="trading-status-indicator" style="width: 12px; height: 12px; border-radius: 50%; background: #ff6b6b; box-shadow: 0 0 8px #ff6b6b;"></span>
+                <span id="trading-status-text" style="color: #ff6b6b; font-weight: bold; font-size: 0.9rem;">Stopped</span>
+                
+
+                
+                <button id="refresh-dashboard" onclick="refreshTradingDashboard()" style="background: #007bff; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.8em;">
+                    🔄 Refresh
+                </button>
+                <button id="auto-refresh-dashboard" onclick="toggleDashboardAutoRefresh()" style="background: #6c757d; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.8em;">
+                    🔄 Auto: OFF
+                </button>
+                <button id="test-dashboard" onclick="testDashboard()" style="background: #ffc107; color: #000; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.8em;">
+                    🧪 Test Dashboard
+                </button>
+            </div>
+        </div>
+        
+        <div class="dashboard-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+            <div class="stat-card" style="text-align: center;">
+                <div class="stat-label">Active Trades</div>
+                <div class="stat-value" id="active-trades-count" style="color: var(--accent-blue);">0</div>
+            </div>
+            <div class="stat-card" style="text-align: center;">
+                <div class="stat-label">Angel One</div>
+                <div id="angel-status" style="font-weight: 600; font-size: 0.95rem; color: var(--accent-warning);">Checking...</div>
+                <button id="angel-refresh" onclick="refreshAngelSession()" style="margin-top: 10px; background:#17a2b8; color:#fff; border:none; padding:6px 10px; border-radius:6px; font-size:0.8rem; cursor:pointer;">Refresh Session</button>
+            </div>
+            <div class="stat-card" style="text-align: center;">
+                <div class="stat-label">Total P&L</div>
+                <div class="stat-value" id="total-pnl" style="color: var(--accent-blue);">₹0.00</div>
+                <div id="pnl-breakdown" style="margin-top:6px; font-size: 0.85rem; color:var(--text-secondary); display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+                    <span id="pnl-profit" style="color:var(--accent-green);">▲ ₹0.00 (0%)</span>
+                    <span id="pnl-loss" style="color:var(--accent-red);">▼ ₹0.00 (0%)</span>
+                    <span id="pnl-portfolio" style="color:var(--accent-warning);">💼 ₹0.00</span>
+                </div>
+                <div style="margin-top:8px; display:flex; gap:6px; justify-content:center; align-items:center; flex-wrap:wrap;">
+                    <input type="date" id="pnl-start" style="background: rgba(0,0,0,0.3); color:#fff; border:1px solid var(--border-color); border-radius:6px; padding:4px 8px; font-size:0.8rem;">
+                    <input type="date" id="pnl-end" style="background: rgba(0,0,0,0.3); color:#fff; border:1px solid var(--border-color); border-radius:6px; padding:4px 8px; font-size:0.8rem;">
+                    <button onclick="refreshPnlByDate()" style="background:#17a2b8; color:#fff; border:none; padding:4px 10px; border-radius:6px; font-size:0.8rem; cursor:pointer;">Apply</button>
+                </div>
+            </div>
+            <div class="stat-card" style="text-align: center;">
+                <div class="stat-label">Win Rate</div>
+                <div class="stat-value" id="win-rate" style="color: var(--accent-blue);">0%</div>
+            </div>
+            <div class="stat-card" style="text-align: center;">
+                <div class="stat-label">Last Update</div>
+                <div class="stat-value" id="last-update" style="color: var(--accent-blue);">--:--</div>
+            </div>
+        </div>
+        
+        <!-- Currently Open Trades - Full Width -->
+        <div class="active-trades-container" style="margin-bottom: 20px;">
+            <div class="trades-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h4 style="color: #00e6d0; margin: 0; font-size: 1.1rem;">📊 Currently Open Trades</h4>
+                <div class="trades-summary" id="trades-summary" style="color: #aaa; font-size: 0.9rem;">No active trades</div>
+            </div>
+
+            <div class="trade-card" style="background: rgba(255,255,255,0.07); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1); min-height: 200px; display: flex; flex-direction: column; box-sizing: border-box; overflow: hidden;">
+                    <div id="active-trades-grid" class="trades-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; flex: 1 1 auto; min-height: 0; overflow: auto;">
+                        <div class="no-trades-placeholder" style="text-align: center; color: #aaa; padding: 20px; background: rgba(0,0,0,0.2); border-radius: 10px; border: 1px dashed rgba(255,255,255,0.2);">
+                            <div style="font-size: 1.6em; margin-bottom: 10px;">📈</div>
+                            <div>No active trades at the moment</div>
+                            <div style="font-size: 0.9em; margin-top: 10px; color: #888;">Trades will appear here when auto-trading is active</div>
+                    </div>
+                        </div>
+                    </div>
+                </div>
+
+        <!-- Chart and Signal Generator Row -->
+        <div class="dashboard-main-grid" style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: stretch;">
+            <!-- Chart - Takes 2/3 width -->
+            <div class="trade-card" style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 20px; border: 1px solid var(--border-color); height: 420px; display: flex; flex-direction: column; box-sizing: border-box; overflow: hidden;">
+                <div class="chart-card" style="margin:0; box-shadow:none; border:none; padding:0; height: 100%; display: flex; flex-direction: column; min-height: 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h3 style="color: var(--accent-blue); margin: 0; font-size: 1.1rem; font-weight: bold;">
+                            <i class="fas fa-chart-line"></i> Market Price Chart
+                        </h3>
+                        <div class="chart-type-tabs" style="display: flex; gap: 8px;">
+                            <button type="button" id="tab-tradingview" onclick="switchChartTab('tradingview')" style="padding: 6px 12px; font-size: 0.75rem; background: var(--accent-blue); color: #000; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s;">
+                                <i class="fas fa-chart-area"></i> TradingView
+                            </button>
+                            <button type="button" id="tab-analysis" onclick="switchChartTab('analysis')" style="padding: 6px 12px; font-size: 0.75rem; border-radius: 6px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); transition: all 0.2s;">
+                                <i class="fas fa-chart-bar"></i> Indicators
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- TradingView Widget Wrapper -->
+                    <div id="tradingview-chart-container" style="flex: 1 1 auto; min-height: 0; display: block; height: 100%; border-radius: 8px; overflow: hidden; background: rgba(0,0,0,0.1);">
+                        <div id="tradingview_chart" style="width: 100%; height: 100%;">
+                            <div style="padding: 40px; text-align: center; color: var(--text-muted); display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; gap: 10px;">
+                                <i class="fas fa-chart-line" style="font-size: 3rem; color: var(--border-hover);"></i>
+                                <div style="font-size: 1.1rem; font-weight: 600; color: var(--text-primary);">No pair selected</div>
+                                <div style="font-size: 0.85rem;">Select an Indian market pair from the dropdown to load live TradingView chart</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Chart.js Analysis Wrapper -->
+                    <div id="analysis-chart-container" style="flex: 1 1 auto; min-height: 0; display: none; height: 100%;">
+                        <div class="chart-controls" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
+                            <div style="display: flex; align-items: center;">
+                                <input type="checkbox" id="showPrice" checked style="margin-right: 5px;">
+                                <label for="showPrice" style="color: var(--accent-blue); cursor: pointer; font-size: 0.8rem;">Price</label>
+                            </div>
+                            <div style="display: flex; align-items: center;">
+                                <input type="checkbox" id="showRSI" style="margin-right: 5px;">
+                                <label for="showRSI" style="color: #ffb300; cursor: pointer; font-size: 0.8rem;">RSI</label>
+                            </div>
+                            <div style="display: flex; align-items: center;">
+                                <input type="checkbox" id="showMACD" style="margin-right: 5px;">
+                                <label for="showMACD" style="color: #f44336; cursor: pointer; font-size: 0.8rem;">MACD</label>
+                            </div>
+                            <div style="display: flex; align-items: center;">
+                                <input type="checkbox" id="showBB" style="margin-right: 5px;">
+                                <label for="showBB" style="color: #4CAF50; cursor: pointer; font-size: 0.8rem;">Bollinger Bands</label>
+                            </div>
+                            <button type="button" id="resetZoomBtn" onclick="resetChartZoom()" class="btn" style="display: none; align-items: center; gap: 6px; padding: 2px 8px; font-size: 0.7rem; border-radius: 4px; background: rgba(255, 107, 107, 0.15); border: 1px solid rgba(255, 107, 107, 0.3); color: #ff6b6b; font-weight: bold; cursor: pointer; height: 22px; transition: all 0.2s; margin-left: auto;">
+                                <i class="fas fa-undo"></i> Reset Zoom
+                            </button>
+                        </div>
+                        <div style="flex:1 1 auto; min-height:0; display:flex; position: relative; height: calc(100% - 30px);">
+                            <canvas id="priceChart" style="width:100%; background:transparent; flex:1 1 auto; min-height:0;"></canvas>
+                        </div>
+                        <div id="noDataMsg" style="margin-top: 6px; color: var(--text-muted); font-size: 0.8rem; text-align: center; display: none;">No real-time price data available. Please select a pair from the dropdown.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Signal Generator - Takes 1/3 width -->
+            <div class="trade-card" style="background: rgba(255,255,255,0.07); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1); height: 400px; display: flex; flex-direction: column; box-sizing: border-box; overflow: hidden;">
+                    <div class="form-card" style="margin:0; box-shadow:none; border:none; padding:0; height: 100%; display: flex; flex-direction: column; overflow: auto;">
+                    <h3 style="color:#00e6d0; margin-bottom: 15px;">Kishan X Signal Generator</h3>
+                        <form method="POST" action="{{ url_for('indian_market') }}">
+                            <div class="form-group">
+                                <label class="form-label">Pair:</label>
+                                <select class="form-select" id="pairSelect" name="pair" onchange="updateMarketData(this.value)">
+                                    <option value="Select Pair" {% if not selected_pair %}selected{% endif %}>Select Pair</option>
+                                    {% for pair in pairs %}
+                                    <option value="{{ pair }}" {% if pair == selected_pair %}selected{% endif %}>{{ pair }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Broker:</label>
+                                <select class="form-select" id="brokerSelect" name="broker">
+                                    {% for broker in brokers %}
+                                    <option value="{{ broker }}" {% if broker == selected_broker %}selected{% endif %}>{{ broker }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Signal Type:</label>
+                                <select class="form-select" id="signal_type" name="signal_type">
+                                    <option value="CALL">CALL</option>
+                                    <option value="PUT">PUT</option>
+                                    <option value="BOTH">BOTH</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Start Time:</label>
+                                <div class="time-inputs">
+                                    <select class="form-select" id="start_hour" name="start_hour">
+                                        {% for h in range(0,24) %}
+                                        <option value="{{ '%02d' % h }}">{{ '%02d' % h }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <select class="form-select" id="start_minute" name="start_minute">
+                                        {% for m in range(0,60,5) %}
+                                        <option value="{{ '%02d' % m }}">{{ '%02d' % m }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">End Time:</label>
+                                <div class="time-inputs">
+                                    <select class="form-select" id="end_hour" name="end_hour">
+                                        {% for h in range(0,24) %}
+                                        <option value="{{ '%02d' % h }}">{{ '%02d' % h }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <select class="form-select" id="end_minute" name="end_minute">
+                                        {% for m in range(0,60,5) %}
+                                        <option value="{{ '%02d' % m }}">{{ '%02d' % m }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <button type="submit" class="generate-btn">Generate</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="recent-closed-trades" style="margin-top: 20px;">
+            <div class="closed-trades-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h4 style="color: #00e6d0; margin: 0; font-size: 1.1rem;">📋 Recently Closed Trades</h4>
+                <button id="toggle-closed-trades" onclick="toggleClosedTrades()" style="background: transparent; color: #00e6d0; border: 1px solid #00e6d0; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8em;">
+                    👁️ Show
+                </button>
+            </div>
+
+            <div id="closed-trades-filters" style="display: none; margin-bottom: 12px; padding: 12px; background: rgba(0,0,0,0.15); border-radius: 8px;">
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                    <select id="ct-filter-type" style="background: #1a1a2e; color: #fff; border: 1px solid #333; padding: 6px 10px; border-radius: 4px; font-size: 0.85rem;">
+                        <option value="all">All Trades</option>
+                        <option value="profit">✅ Profit Trades</option>
+                        <option value="loss">❌ Loss Trades</option>
+                    </select>
+                    <input type="text" id="ct-filter-symbol" placeholder="Symbol (e.g. RELIANCE)" style="background: #1a1a2e; color: #fff; border: 1px solid #333; padding: 6px 10px; border-radius: 4px; font-size: 0.85rem; width: 140px;">
+                    <input type="date" id="ct-filter-from" style="background: #1a1a2e; color: #fff; border: 1px solid #333; padding: 6px 10px; border-radius: 4px; font-size: 0.85rem;">
+                    <span style="color: #aaa; font-size: 0.85rem;">to</span>
+                    <input type="date" id="ct-filter-to" style="background: #1a1a2e; color: #fff; border: 1px solid #333; padding: 6px 10px; border-radius: 4px; font-size: 0.85rem;">
+                    <button onclick="loadClosedTrades()" style="background: #00e6d0; color: #000; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; font-weight: bold;">Apply</button>
+                    <span id="ct-count" style="color: #aaa; font-size: 0.85rem; margin-left: auto;"></span>
+                </div>
+            </div>
+            
+            <div id="closed-trades-container" class="closed-trades-list" style="display: none; max-height: 300px; overflow-y: auto;">
+                <div class="no-closed-trades" style="text-align: center; color: #aaa; padding: 20px;">
+                    No closed trades yet
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Real-Time AI Trading Signals Section -->
+    <div class="trade-card animate-fade-in" style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 24px; border: 1px solid var(--border-color); margin-top: 24px;">
+        <div class="signals-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px;">
+            <h4 style="color: var(--accent-blue); margin: 0; font-size: 1.1rem; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-brain" style="color: var(--accent-blue);"></i> Real-Time AI Trading Signals
+            </h4>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <button id="refresh-signals" class="btn btn-primary" style="padding: 6px 12px; font-size: 0.75rem; font-weight: bold; border-radius: 6px;">
+                    <i class="fas fa-sync-alt"></i> Fetch Signals
+                </button>
+                <button id="auto-refresh-toggle" class="btn btn-ghost" style="padding: 6px 12px; font-size: 0.75rem; font-weight: bold; border-radius: 6px; border: 1px solid var(--border-color); color: var(--text-secondary);">
+                    🔄 Auto-Refresh: OFF
+                </button>
+            </div>
+        </div>
+        
+        <div id="real-time-signals" class="signals-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(285px, 1fr)); gap: 16px; min-height: 120px;">
+            <div class="signal-placeholder" style="text-align: center; color: var(--text-muted); padding: 40px; background: rgba(0,0,0,0.15); border-radius: 10px; border: 1px dashed var(--border-color); grid-column: 1 / -1;">
+                <div style="font-size: 2em; margin-bottom: 10px;">📊</div>
+                <div style="font-weight: 600; color: var(--text-primary);">No active signals at the moment</div>
+                <div style="font-size: 0.85rem; margin-top: 5px;">Click "Fetch Signals" or enable auto-refresh to check for opportunities</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden chart data for JavaScript -->
+    {% if chart_data %}
+    <div id="chartData" data-chart-data="{{ chart_data | tojson | safe }}" style="display: none;"></div>
+    {% endif %}
+
+    <!-- Signals Section -->
+    {% if signals %}
+    <div class="signals-toggle">
+        <button id="toggleSignals" class="btn">
+            <i class="fas fa-chevron-down"></i> Click to Hide Generated Signals
+        </button>
+    </div>
+    <div id="signalsContainer" class="signals-container">
+        <h3 style="color:#00e6d0; margin-bottom: 20px;">Generated Signals</h3>
+        <div class="signals-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+            {% for signal in signals %}
+            <div class="signal-card" style="background: rgba(255,255,255,0.07); border-radius: 12px; padding: 20px; box-shadow: 0 2px 16px #0002;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <div style="font-size: 1.2rem; font-weight: bold;">{{ signal.pair }}</div>
+                    <div style="font-size: 1.1rem; color: #00e6d0;">{{ signal.time }}</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                    {% if signal.direction == "CALL" %}
+                    <i class="fas fa-arrow-up" style="color: #4CAF50; font-size: 1.5rem;"></i>
+                    <span style="color: #4CAF50; font-weight: bold;">BUY</span>
+                    {% else %}
+                    <i class="fas fa-arrow-down" style="color: #f44336; font-size: 1.5rem;"></i>
+                    <span style="color: #f44336; font-weight: bold;">SELL</span>
+                    {% endif %}
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-chart-line" style="color: #00e6d0;"></i>
+                    <div style="font-size: 0.9rem; color: #aaa;">Signal Confidence: <span style="color: #fff;">{{ signal.confidence|default(0)|round(2) }}%</span></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div style="margin-top: 20px; text-align: center;">
+            <a href="{{ url_for('download_indian') }}" class="btn">Download Signals</a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+<!-- Indian Trading Time Checker Modal -->
+<div id="tradingTimeModal" class="trading-modal-overlay" style="display: none;">
+    <div class="trading-modal" onclick="event.stopPropagation();">
+        <div class="trading-modal-header" onclick="event.stopPropagation();">
+            <button onclick="hideTradingTimeModal(); event.stopPropagation();" class="trading-modal-close" title="Close">
+                <i class="fas fa-times"></i>
+            </button>
+            <h1>Indian Trading Time Checker</h1>
+            <p>Know when the Indian stock market is open for trading</p>
+        </div>
+        
+        <div class="trading-modal-body" onclick="event.stopPropagation();">
+            <div class="flag" style="font-size: 40px; margin: 0 auto 15px auto; text-align: center;">🇮🇳</div>
+            
+            <div class="date-display" id="dateDisplay">Loading date...</div>
+            
+            <div class="time-display" id="timeDisplay">Loading time...</div>
+            
+            <div class="status-msg" id="statusMessage">Checking trading hours...</div>
+            
+            <div class="trading-hours">
+                <div class="session">
+                    <div>Pre-open</div>
+                    <div class="session-time">9:00 - 9:15 AM</div>
+                </div>
+                <div class="session">
+                    <div>Regular Trading</div>
+                    <div class="session-time">9:15 - 3:30 PM</div>
+                </div>
+            </div>
+            
+            <div class="info-card">
+                <h3>Indian Standard Time (IST)</h3>
+                <p>Indian stock markets (NSE & BSE) are open Monday to Friday, from 9:15 AM to 3:30 PM IST.</p>
+                <p style="font-size: 11px; opacity: 0.8; margin-top: 4px;">Active trading functions will only work during market hours.</p>
+            </div>
+            
+            <div class="modal-actions">
+                <button class="modal-btn primary" onclick="checkTradingTime()">
+                    <i class="fas fa-sync-alt"></i> Check Again
+                </button>
+                <button class="modal-btn success" onclick="goToIndianMarket()">
+                    <i class="fas fa-chart-line"></i> Go to Indian Market
+                </button>
+            </div>
+            
+            <div class="footer-note">
+                Note: Markets are closed on weekends and public holidays
+            </div>
+        </div>
+    </div>
+</div>.05); }
+    100% { transform: scale(1); }
+}
+</style>
+
+<script>
+// Indian Trading Time Checker Functions
+function showTradingTimeModal() {
+    console.log('=== INDIAN TRADING TIME CHECKER LOADED ===');
+    const modal = document.getElementById('tradingTimeModal');
+    if (modal) {
+        // Remove hidden class and show modal
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        modal.style.visibility = 'visible';
+        modal.style.opacity = '1';
+        modal.style.pointerEvents = 'auto';
+        modal.style.zIndex = '999999';
+        
+        // Update time immediately
+        updateTime();
+        checkTradingTime();
+        
+        // Clear any existing intervals to prevent multiple timers
+        if (window.timeUpdateInterval) {
+            clearInterval(window.timeUpdateInterval);
+        }
+        if (window.tradingCheckInterval) {
+            clearInterval(window.tradingCheckInterval);
+        }
+        
+        // Set new intervals
+        window.timeUpdateInterval = setInterval(updateTime, 1000);
+        window.tradingCheckInterval = setInterval(checkTradingTime, 60000);
+    } else {
+        console.error('Modal element not found!');
+    }
+}
+
+function hideTradingTimeModal() {
+    const modal = document.getElementById('tradingTimeModal');
+    if (modal) {
+        // Force hide the modal with multiple methods
+        modal.style.display = 'none';
+        modal.style.visibility = 'hidden';
+        modal.style.opacity = '0';
+        modal.style.pointerEvents = 'none';
+        
+        // Add a class to ensure it's hidden
+        modal.classList.add('hidden');
+        
+        // Clear intervals to prevent memory leaks
+        if (window.timeUpdateInterval) {
+            clearInterval(window.timeUpdateInterval);
+            window.timeUpdateInterval = null;
+        }
+        if (window.tradingCheckInterval) {
+            clearInterval(window.tradingCheckInterval);
+            window.tradingCheckInterval = null;
+        }
+        
+        console.log('Modal hidden successfully');
+    }
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', function(event) {
+    const modal = document.getElementById('tradingTimeModal');
+    if (modal && event.target === modal) {
+        console.log('Clicked outside modal, closing...');
+        hideTradingTimeModal();
+    }
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(event) {
+    // Escape key to close modal
+    if (event.key === 'Escape') {
+        const modal = document.getElementById('tradingTimeModal');
+        if (modal && modal.style.display === 'flex') {
+            console.log('Escape key pressed, closing modal...');
+            hideTradingTimeModal();
+        }
+    }
+    // Ctrl+T to open modal
+    if (event.ctrlKey && event.key === 't') {
+        event.preventDefault();
+        showTradingTimeModal();
+    }
+});
+
+function goToIndianMarket() {
+    console.log('User chose to proceed to Indian market');
+    
+    // Hide the modal first
+    hideTradingTimeModal();
+    
+    // Show a success message
+    showNotification('✅ Proceeding to Indian Market Trading!', 'success');
+    
+    // Scroll to the trading dashboard after a short delay
+    setTimeout(() => {
+        const dashboard = document.querySelector('.trading-dashboard');
+        if (dashboard) {
+            dashboard.scrollIntoView({ behavior: 'smooth' });
+        } else {
+            // If no dashboard found, scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }, 300);
+}
+
+function testModal() {
+    console.log('Testing modal...');
+    const modal = document.getElementById('tradingTimeModal');
+    if (modal) {
+        console.log('Modal element found:', modal);
+        console.log('Modal display style:', modal.style.display);
+        console.log('Modal computed style:', window.getComputedStyle(modal).display);
+        modal.style.display = 'flex';
+        modal.style.visibility = 'visible';
+        modal.style.opacity = '1';
+        modal.style.zIndex = '999999';
+        console.log('Modal should now be visible');
+    } else {
+        console.error('Modal element not found!');
+    }
+}
+
+// Function to update time display
+function updateTime() {
+    try {
+        const now = new Date();
+        const options = { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        };
+        
+        const dateEl = document.getElementById('dateDisplay');
+        const timeEl = document.getElementById('timeDisplay');
+        if (!dateEl || !timeEl) {
+            return;
+        }
+        dateEl.textContent = now.toLocaleDateString('en-IN', options);
+        timeEl.textContent = now.toLocaleTimeString('en-IN', { 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit',
+            hour12: true 
+        });
+    } catch (e) {
+        console.warn('updateTime failed:', e);
+    }
+}
+
+// Function to check if it's trading time
+function checkTradingTime() {
+    const statusMessage = document.getElementById('statusMessage');
+    if (!statusMessage) {
+        return;
+    }
+    
+    fetch('/api/is_trading_day')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
+            const isMarketOpen = data.is_market_open;
+            const upcomingHolidays = data.upcoming_holidays || [];
+            
+            // Format today's local date as YYYY-MM-DD to check against upcoming holidays list
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const dayOfMonth = String(now.getDate()).padStart(2, '0');
+            const localDateStr = `${year}-${month}-${dayOfMonth}`;
+            
+            const isHoliday = upcomingHolidays.includes(localDateStr);
+            const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const currentMinutes = hours * 60 + minutes;
+            
+            const marketOpen = 9 * 60 + 15; // 9:15 AM
+            const marketClose = 15 * 60 + 30; // 3:30 PM
+
+            if (isMarketOpen) {
+                statusMessage.className = 'status-msg trading-open';
+                statusMessage.innerHTML = '<i class="fas fa-check-circle"></i> Market is OPEN! Best of luck for your trading session!';
+            } else if (isHoliday) {
+                statusMessage.className = 'status-msg trading-closed';
+                statusMessage.innerHTML = '<i class="fas fa-calendar-times"></i> Market is closed today for a public holiday. Enjoy the holiday!';
+            } else if (dayOfWeek === 0 || dayOfWeek === 6) {
+                statusMessage.className = 'status-msg trading-closed';
+                statusMessage.innerHTML = '<i class="fas fa-calendar-times"></i> Markets are closed on weekends. Enjoy your weekend!';
+            } else {
+                statusMessage.className = 'status-msg trading-closed';
+                if (currentMinutes < marketOpen) {
+                    const timeLeft = marketOpen - currentMinutes;
+                    const hoursLeft = Math.floor(timeLeft / 60);
+                    const minutesLeft = timeLeft % 60;
+                    statusMessage.innerHTML = `<i class="fas fa-clock"></i> Market opens in ${hoursLeft}h ${minutesLeft}m. Wait for your trading session!`;
+                } else {
+                    statusMessage.innerHTML = '<i class="fas fa-moon"></i> Market is closed for the day. Come back tomorrow!';
+                }
+            }
+        })
+        .catch(err => {
+            console.warn('API trading check failed, falling back to local client time calculation:', err);
+            
+            // Fallback: original purely client-side weekday calculation
+            const now = new Date();
+            const dayOfWeek = now.getDay();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const currentMinutes = hours * 60 + minutes;
+            
+            const marketOpen = 9 * 60 + 15;
+            const marketClose = 15 * 60 + 30;
+
+            if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+                if (currentMinutes >= marketOpen && currentMinutes <= marketClose) {
+                    statusMessage.className = 'status-msg trading-open';
+                    statusMessage.innerHTML = '<i class="fas fa-check-circle"></i> Market is OPEN! Best of luck for your trading session!';
+                } else {
+                    statusMessage.className = 'status-msg trading-closed';
+                    if (currentMinutes < marketOpen) {
+                        const timeLeft = marketOpen - currentMinutes;
+                        const hoursLeft = Math.floor(timeLeft / 60);
+                        const minutesLeft = timeLeft % 60;
+                        statusMessage.innerHTML = `<i class="fas fa-clock"></i> Market opens in ${hoursLeft}h ${minutesLeft}m. Wait for your trading session!`;
+                    } else {
+                        statusMessage.innerHTML = '<i class="fas fa-moon"></i> Market is closed for the day. Come back tomorrow!';
+                    }
+                }
+            } else {
+                statusMessage.className = 'status-msg trading-closed';
+                statusMessage.innerHTML = '<i class="fas fa-calendar-times"></i> Markets are closed on weekends. Enjoy your weekend!';
+            }
+        });
+}
+
+// Test if basic functions exist
+window.simpleTest = function() {
+    console.log('Simple test function called');
+    showTradingTimeModal();
+};
+
+// Start of merged second script block content
+let priceChart = null;
+let chartInitialized = false;
+let updateInterval = null;
+let rollingPrices = [];
+let rollingLabels = [];
+const MAX_POINTS = 100;
+
+// Demo timer fetch function (commented out - using local timer instead)
+/*
+function updateDemoTime() {
+     fetch("/get_demo_time")
+         .then(response => {
+             if (!response.ok) {
+                 throw new Error(`HTTP error! status: ${response.status}`);
+             }
+             return response.json();
+         })
+         .then(data => {
+             console.log("Demo time data:", data);
+             if (data.status === 'success') {
+         document.getElementById("demo-time").textContent = data.time_left;
+             } else {
+                 console.error("Demo time error:", data.message);
+                 document.getElementById("demo-time").textContent = "Error";
+             }
+         })
+         .catch(error => {
+             console.error("Error fetching demo time:", error);
+             document.getElementById("demo-time").textContent = "Error";
+         });
+ }
+*/
+
+
+
+// Initialize display with template data
+function initializeDisplay() {
+    const chartDataElement = document.getElementById('chartData');
+    console.log("Initializing display with template data");
+
+    // Get the current pair to check if it's an Indian market
+    const pair = document.getElementById('pairSelect').value;
+    const isIndianMarket = ["NIFTY50", "BANKNIFTY", "SENSEX", "FINNIFTY", "MIDCPNIFTY",
+                           "NIFTYREALTY", "NIFTYPVTBANK", "NIFTYPSUBANK", "NIFTYFIN", "NIFTYMEDIA",
+                           "RELIANCE", "TCS", "HDFCBANK", "INFY", "ICICIBANK", "HINDUNILVR",
+                           "SBIN", "BHARTIARTL", "KOTAKBANK", "BAJFINANCE"].includes(pair);
+
+    // Helper: safely parse chart data from the hidden element
+    function parseChartData() {
+        if (!chartDataElement || !chartDataElement.dataset.chartData) return null;
+        try {
+            return JSON.parse(chartDataElement.dataset.chartData);
+        } catch (parseError) {
+            console.error("JSON parse error:", parseError);
+            try {
+                const cleaned = chartDataElement.dataset.chartData
+                    .replace(/\n/g, '').replace(/\r/g, '').replace(/\t/g, '').trim();
+                return JSON.parse(cleaned);
+            } catch (secondError) {
+                console.error("Second JSON parse error:", secondError);
+                return { prices: [], timestamps: [], indicators: { rsi: [], macd: [], macd_signal: [], bollinger_upper: [], bollinger_lower: [], bollinger_middle: [] } };
+            }
+        }
+    }
+
+    // Helper: render chart from parsed data
+    function renderChart(data) {
+        if (!data || !data.prices || data.prices.length === 0) return;
+        const timestamps = data.prices.map((_, i) => `${i}:00`);
+        initializeChart(timestamps, data.prices,
+                        data.indicators.bollinger_middle,
+                        data.indicators.bollinger_middle,
+                        data.indicators.bollinger_upper,
+                        data.indicators.bollinger_lower);
+        chartInitialized = true;
+        const noDataMsg = document.getElementById('noDataMsg');
+        if (noDataMsg) noDataMsg.style.display = 'none';
+    }
+
+    if (isIndianMarket && pair !== "Select Pair") {
+        console.log(`Initializing display for Indian market: ${pair}`);
+        updateMarketData(pair); // Fetch real data from Angel One API
+        return;
+    }
+
+    // Non-Indian path: also try to render chart from template data
+    renderChart(parseChartData());
+}
+
+// Make function globally accessible
+window.initializeDisplay = initializeDisplay;
+
+// Demo timer (fetch from backend and tick locally)
+let demoRemainingSeconds = null;
+
+function parseHMSToSeconds(hms) {
+    // hms expected like HH:MM:SS or H:MM:SS
+    try {
+        const parts = (hms || '').split(':').map(p => parseInt(p, 10));
+        if (parts.length === 3 && parts.every(n => !isNaN(n))) {
+            return parts[0] * 3600 + parts[1] * 60 + parts[2];
+        }
+    } catch (e) {}
+    return null;
+}
+
+function formatSeconds(ss) {
+    const s = Math.max(0, ss|0);
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+
+function renderDemoTime() {
+    const el = document.getElementById('demo-time');
+    if (!el) return;
+    if (demoRemainingSeconds == null || demoRemainingSeconds <= 0) {
+        el.textContent = '00:00:00';
+    } else {
+        el.textContent = formatSeconds(demoRemainingSeconds);
+    }
+}
+
+function fetchDemoTime() {
+    fetch('/get_demo_time')
+        .then(r => r.json())
+        .then(data => {
+            if (data && data.status === 'success' && typeof data.time_left === 'number') {
+                demoRemainingSeconds = data.time_left;
+                renderDemoTime();
+            } else if (data && data.status === 'error') {
+                // No active demo session - hide timer or show nothing
+                const el = document.getElementById('demo-timer');
+                if (el) el.style.display = 'none';
+            } else {
+                console.warn('Demo time response:', data);
+                // Fallback: show placeholders
+                demoRemainingSeconds = null;
+                renderDemoTime();
+            }
+        })
+        .catch(err => {
+            console.error('Error fetching demo time:', err);
+            demoRemainingSeconds = null;
+            renderDemoTime();
+        });
+}
+
+function tickDemoTime() {
+    if (demoRemainingSeconds != null && demoRemainingSeconds > 0) {
+        demoRemainingSeconds -= 1;
+        renderDemoTime();
+    }
+}
+
+// Kick off timer
+fetchDemoTime();
+setInterval(fetchDemoTime, 30000);
+setInterval(tickDemoTime, 1000);
+
+// Initialize display when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    initializeDisplay();
+    
+    // Check and update trading mode display
+    updateTradingModeDisplay();
+    
+    // Show trading time modal and fully initialize contents immediately
+    console.log('Page loaded, showing trading time modal...');
+    setTimeout(() => {
+        showTradingTimeModal();
+        // Ensure all fields are populated on open (no loading placeholders)
+        try { updateTime(); } catch(_) {}
+        try { checkTradingTime(); } catch(_) {}
+    }, 300); // small delay for DOM
+});
+
+// Function to update trading mode display
+function updateTradingModeDisplay() {
+    fetch('/api/current_mode')
+    .then(response => response.json())
+    .then(data => {
+        const modeBadge = document.getElementById('current-mode-badge');
+        if (modeBadge) {
+            if (data.mode === 'live') {
+                modeBadge.innerHTML = '<i class="fas fa-exclamation-triangle"></i> LIVE MODE';
+                modeBadge.style.background = 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)';
+                modeBadge.style.animation = 'pulse 2s infinite';
+            } else {
+                modeBadge.innerHTML = '<i class="fas fa-play-circle"></i> DEMO MODE';
+                modeBadge.style.background = 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)';
+                modeBadge.style.animation = 'none';
+            }
+        }
+    })
+    .catch(error => {
+        console.log('Using default DEMO mode display');
+    });
+}
+
+let currentTvSymbol = null;
+
+function loadTradingViewChart(pair) {
+    if (!pair || pair === "Select Pair") return;
+    
+    // Map dropdown values to TradingView symbols
+    const symbolMap = {
+        "NIFTY50": "NSE:NIFTY",
+        "BANKNIFTY": "NSE:BANKNIFTY",
+        "SENSEX": "BSE:SENSEX",
+        "FINNIFTY": "NSE:CNXFINANCE",
+        "MIDCPNIFTY": "NSE:MIDCPNIFTY",
+        "NIFTYREALTY": "NSE:NIFTYREALTY",
+        "NIFTYPVTBANK": "NSE:NIFTYPVTBANK",
+        "NIFTYPSUBANK": "NSE:NIFTYPSUBANK",
+        "NIFTYFIN": "NSE:CNXFINANCE",
+        "NIFTYMEDIA": "NSE:NIFTYMEDIA",
+        "RELIANCE": "NSE:RELIANCE",
+        "TCS": "NSE:TCS",
+        "HDFCBANK": "NSE:HDFCBANK",
+        "INFY": "NSE:INFY",
+        "ICICIBANK": "NSE:ICICIBANK",
+        "HINDUNILVR": "NSE:HINDUNILVR",
+        "SBIN": "NSE:SBIN",
+        "BHARTIARTL": "NSE:BHARTIARTL",
+        "KOTAKBANK": "NSE:KOTAKBANK",
+        "BAJFINANCE": "NSE:BAJFINANCE"
+    };
+    
+    const tvSymbol = symbolMap[pair] || "NSE:NIFTY";
+    
+    if (currentTvSymbol === tvSymbol) {
+        console.log(`TradingView widget already showing symbol: ${tvSymbol}`);
+        return;
+    }
+    
+    console.log(`Instantiating TradingView widget for: ${tvSymbol}`);
+    currentTvSymbol = tvSymbol;
+    
+    try {
+        new TradingView.widget({
+            "autosize": true,
+            "symbol": tvSymbol,
+            "interval": "5",
+            "timezone": "Asia/Kolkata",
+            "theme": "dark",
+            "style": "1",
+            "locale": "en",
+            "enable_publishing": false,
+            "hide_side_toolbar": false,
+            "allow_symbol_change": true,
+            "container_id": "tradingview_chart",
+            "studies": [
+                "RSI@tv-basicstudies",
+                "MASimple@tv-basicstudies"
+            ],
+            "show_popup_button": true,
+            "popup_width": "1000",
+            "popup_height": "650"
+        });
+    } catch (e) {
+        console.error("Failed to load TradingView widget:", e);
+        document.getElementById("tradingview_chart").innerHTML = `
+            <div style="padding: 20px; text-align: center; color: var(--accent-red); display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; gap: 10px;">
+                <i class="fas fa-exclamation-triangle" style="font-size: 2em; margin-bottom: 5px;"></i>
+                <div>Failed to load interactive TradingView chart.</div>
+                <div style="font-size: 0.8em; color: var(--text-muted);">Please verify your network connection.</div>
+            </div>
+        `;
+    }
+}
+window.loadTradingViewChart = loadTradingViewChart;
+
+function switchChartTab(tab) {
+    const tvContainer = document.getElementById('tradingview-chart-container');
+    const analysisContainer = document.getElementById('analysis-chart-container');
+    const tvTab = document.getElementById('tab-tradingview');
+    const analysisTab = document.getElementById('tab-analysis');
+    
+    if (tab === 'tradingview') {
+        tvContainer.style.display = 'block';
+        analysisContainer.style.display = 'none';
+        
+        // Style active tab button
+        tvTab.style.background = 'var(--accent-blue)';
+        tvTab.style.color = '#000';
+        tvTab.style.border = 'none';
+        
+        analysisTab.className = 'btn btn-ghost';
+        analysisTab.style.background = 'transparent';
+        analysisTab.style.color = 'var(--text-secondary)';
+        analysisTab.style.border = '1px solid var(--border-color)';
+        
+        // Render TradingView chart for currently selected pair
+        const pair = document.getElementById('pairSelect').value;
+        if (pair && pair !== "Select Pair") {
+            loadTradingViewChart(pair);
+        }
+    } else {
+        tvContainer.style.display = 'none';
+        analysisContainer.style.display = 'block';
+        
+        // Style active tab button
+        analysisTab.style.background = 'var(--accent-blue)';
+        analysisTab.style.color = '#000';
+        analysisTab.style.border = 'none';
+        
+        tvTab.className = 'btn btn-ghost';
+        tvTab.style.background = 'transparent';
+        tvTab.style.color = 'var(--text-secondary)';
+        tvTab.style.border = '1px solid var(--border-color)';
+    }
+}
+window.switchChartTab = switchChartTab;
+
+function updateMarketData(pair) {
+    if (updateInterval) {
+        clearInterval(updateInterval);
+    }
+    
+    if (!pair || pair === "Select Pair") {
+        updateInfoCardAndChart(null);
+        return;
+    }
+
+    console.log(`Updating market data for pair: ${pair}`);
+    
+    // Dynamically update TradingView symbol
+    loadTradingViewChart(pair);
+    
+    // Update the chart with new data
+    fetchAndUpdateChart(pair);
+    
+    // Start periodic updates
+    updateInterval = setInterval(() => fetchAndUpdateChart(pair), 5000);
+}
+
+// Make function globally accessible
+window.updateMarketData = updateMarketData;
+
+async function fetchAndUpdateChart(pair) {
+    try {
+        console.log(`Fetching chart data for: ${pair}`);
+        
+        // Fetch market data for the selected pair
+        const response = await fetch(`/api/indian/market_data/${pair}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            console.error('Error fetching market data:', data.error);
+            updateInfoCardAndChart(null);
+        return;
+    }
+    
+        // Update the chart with the received data
+            updateInfoCardAndChart(data);
+        
+    } catch (error) {
+        console.error('Error fetching market data:', error);
+            updateInfoCardAndChart(null);
+    }
+}
+
+// Make function globally accessible
+window.fetchAndUpdateChart = fetchAndUpdateChart;
+
+function updateInfoCardAndChart(data) {
+    const noDataMsg = document.getElementById('noDataMsg');
+    const priceChart = document.getElementById('priceChart');
+    let priceValue = document.getElementById('currentRate');
+    let marketPrices = document.querySelectorAll('.current-market-price');
+    
+    // Check if this is an Indian market
+    const pair = document.getElementById('pairSelect').value;
+    const isIndianMarket = ["NIFTY50", "BANKNIFTY", "SENSEX", "FINNIFTY", "MIDCPNIFTY", 
+                           "NIFTYREALTY", "NIFTYPVTBANK", "NIFTYPSUBANK", "NIFTYFIN", "NIFTYMEDIA",
+                           "RELIANCE", "TCS", "HDFCBANK", "INFY", "ICICIBANK", "HINDUNILVR", 
+                           "SBIN", "BHARTIARTL", "KOTAKBANK", "BAJFINANCE"].includes(pair);
+    
+    if (isIndianMarket) {
+        // Handle Indian market data
+        if (!data || !data.historical) {
+            // No data available
+            noDataMsg.textContent = 'No real-time price data available. Please select a pair from the dropdown.';
+            noDataMsg.style.display = 'block';
+            
+            // Clear chart
+            if (window.chart) {
+                window.chart.destroy();
+                window.chart = null;
+            }
+            return;
+        }
+        
+        // Hide no data message
+        noDataMsg.style.display = 'none';
+        
+        // Update chart with new data
+        updateChart(data);
+    } else {
+        // Handle other market data
+    if (isIndianMarket && !data) {
+        console.log(`Keeping template data for Indian market: ${pair}`);
+        return; // Don't override template data for Indian markets
+    }
+    
+    let newRate = (data && typeof data.rate === 'number') ? data.rate.toFixed(5) : 'N/A';
+    if (priceValue) priceValue.textContent = newRate;
+    marketPrices.forEach(function(el) { el.textContent = newRate; });
+    
+    // Update other fields only if we have valid data
+    if (data && data.call_price) {
+        if (document.getElementById('callPrice')) document.getElementById('callPrice').textContent = data.call_price.toFixed(6);
+    }
+    if (data && data.put_price) {
+        if (document.getElementById('putPrice')) document.getElementById('putPrice').textContent = data.put_price.toFixed(6);
+    }
+    if (data && data.selected_broker) {
+        if (document.getElementById('selectedBroker')) document.getElementById('selectedBroker').textContent = data.selected_broker;
+    }
+    if (data && data.payout) {
+            if (document.getElementById('payout')) document.getElementById('payout').textContent = data.payout.toFixed(2);
+        }
+        
+        // Hide no data message if we have data
+        if (noDataMsg) {
+            noDataMsg.style.display = 'none';
+        }
+    }
+}
+
+// Make function globally accessible
+window.updateInfoCardAndChart = updateInfoCardAndChart;
+
+// Calculate RSI
+function calculateRSI(prices, period = 14) {
+    if (!prices || prices.length < period) return [];
+    let gains = [], losses = [];
+    for (let i = 1; i < prices.length; i++) {
+        const change = prices[i] - prices[i-1];
+        gains.push(change > 0 ? change : 0);
+        losses.push(change < 0 ? -change : 0);
+    }
+    let avgGain = gains.slice(0, period).reduce((a, b) => a + b, 0) / period;
+    let avgLoss = losses.slice(0, period).reduce((a, b) => a + b, 0) / period;
+    let rsi = new Array(period).fill(null);
+    rsi.push(100 - (100 / (1 + avgGain / (avgLoss === 0 ? 0.001 : avgLoss))));
+    
+    for (let i = period; i < prices.length - 1; i++) {
+        avgGain = (avgGain * (period - 1) + gains[i]) / period;
+        avgLoss = (avgLoss * (period - 1) + losses[i]) / period;
+        rsi.push(100 - (100 / (1 + avgGain / (avgLoss === 0 ? 0.001 : avgLoss))));
+    }
+    return rsi;
+}
+
+// Calculate MACD
+function calculateMACD(prices, fastPeriod = 12, slowPeriod = 26, signalPeriod = 9) {
+    if (!prices || prices.length === 0) return { histogram: [] };
+    function calculateEMA(data, period) {
+        const k = 2 / (period + 1);
+        let ema = new Array(data.length).fill(null);
+        ema[0] = data[0];
+        for (let i = 1; i < data.length; i++) {
+            ema[i] = data[i] * k + ema[i-1] * (1-k);
+        }
+        return ema;
+    }
+    
+    const fastEMA = calculateEMA(prices, fastPeriod);
+    const slowEMA = calculateEMA(prices, slowPeriod);
+    const macdLine = fastEMA.map((fast, i) => fast - slowEMA[i]);
+    const signalLine = calculateEMA(macdLine, signalPeriod);
+    
+    return {
+        histogram: macdLine.map((macd, i) => macd - signalLine[i])
+    };
+}
+
+// Calculate Bollinger Bands
+function calculateBollingerBands(prices, period = 20, multiplier = 2) {
+    if (!prices) return { upper: [], lower: [] };
+    const upper = new Array(prices.length).fill(null);
+    const lower = new Array(prices.length).fill(null);
+    
+    for (let i = period - 1; i < prices.length; i++) {
+        const slice = prices.slice(i - period + 1, i + 1);
+        const avg = slice.reduce((a, b) => a + b, 0) / period;
+        const squaredDiffs = slice.map(price => Math.pow(price - avg, 2));
+        const standardDev = Math.sqrt(squaredDiffs.reduce((a, b) => a + b, 0) / period);
+        upper[i] = avg + (multiplier * standardDev);
+        lower[i] = avg - (multiplier * standardDev);
+    }
+    return { upper, lower };
+}
+
+function updateChart(data) {
+    const canvas = document.getElementById('priceChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    // Destroy existing chart
+    if (window.chart) {
+        window.chart.destroy();
+    }
+    
+    // Create a gorgeous vertical fading linear gradient for the price area chart
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.clientHeight || 350);
+    gradient.addColorStop(0, 'rgba(0, 230, 208, 0.15)');
+    gradient.addColorStop(1, 'rgba(0, 230, 208, 0.0)');
+    
+    const dates = data.historical.dates;
+    const prices = data.historical.prices.close;
+    
+    const rsi = calculateRSI(prices);
+    const macd = calculateMACD(prices);
+    const bb = calculateBollingerBands(prices);
+
+    const showPrice = document.getElementById('showPrice')?.checked ?? true;
+    const showRSI = document.getElementById('showRSI')?.checked ?? false;
+    const showMACD = document.getElementById('showMACD')?.checked ?? false;
+    const showBB = document.getElementById('showBB')?.checked ?? false;
+    
+    // Create new chart with zoom plugin configured
+    window.chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: dates,
+            datasets: [
+                {
+                    label: 'Price',
+                    data: prices,
+                    borderColor: '#00e6d0',
+                    backgroundColor: gradient,
+                    borderWidth: 1.2,
+                    fill: true,
+                    tension: 0.1,
+                    hidden: !showPrice,
+                    pointRadius: 0,
+                    pointHoverRadius: 4,
+                    pointHitRadius: 10
+                },
+                {
+                    label: 'RSI',
+                    data: rsi,
+                    borderColor: '#ffb300',
+                    borderDash: [5, 5],
+                    borderWidth: 1,
+                    tension: 0.1,
+                    fill: false,
+                    hidden: !showRSI,
+                    yAxisID: 'y1',
+                    pointRadius: 0,
+                    pointHoverRadius: 4,
+                    pointHitRadius: 10
+                },
+                {
+                    label: 'MACD',
+                    data: macd.histogram,
+                    borderColor: '#f44336',
+                    borderDash: [3, 3],
+                    borderWidth: 1,
+                    tension: 0.1,
+                    fill: false,
+                    hidden: !showMACD,
+                    yAxisID: 'y2',
+                    pointRadius: 0,
+                    pointHoverRadius: 4,
+                    pointHitRadius: 10
+                },
+                {
+                    label: 'Bollinger Upper',
+                    data: bb.upper,
+                    borderColor: 'rgba(76, 175, 80, 0.6)',
+                    borderDash: [2, 2],
+                    borderWidth: 0.8,
+                    tension: 0.1,
+                    fill: false,
+                    hidden: !showBB,
+                    pointRadius: 0,
+                    pointHoverRadius: 0
+                },
+                {
+                    label: 'Bollinger Lower',
+                    data: bb.lower,
+                    borderColor: 'rgba(76, 175, 80, 0.6)',
+                    borderDash: [2, 2],
+                    borderWidth: 0.8,
+                    tension: 0.1,
+                    fill: false,
+                    hidden: !showBB,
+                    pointRadius: 0,
+                    pointHoverRadius: 0
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: { color: '#fff' }
+                },
+                zoom: {
+                    zoom: {
+                        wheel: {
+                            enabled: true,
+                            speed: 0.05
+                        },
+                        pinch: {
+                            enabled: true
+                        },
+                        mode: 'x',
+                        onZoomComplete({chart}) {
+                            const btn = document.getElementById('resetZoomBtn');
+                            if (btn) btn.style.display = 'inline-flex';
+                        }
+                    },
+                    pan: {
+                        enabled: true,
+                        mode: 'x',
+                        onPanComplete({chart}) {
+                            const btn = document.getElementById('resetZoomBtn');
+                            if (btn) btn.style.display = 'inline-flex';
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: '#aaa' },
+                    grid: { color: 'rgba(255, 255, 255, 0.04)' }
+                },
+                y: {
+                    ticks: { color: '#aaa' },
+                    grid: { color: 'rgba(255, 255, 255, 0.04)' }
+                },
+                y1: {
+                    type: 'linear',
+                    display: showRSI,
+                    position: 'right',
+                    grid: { drawOnChartArea: false },
+                    ticks: { color: '#ffb300' }
+                },
+                y2: {
+                    type: 'linear',
+                    display: showMACD,
+                    position: 'right',
+                    grid: { drawOnChartArea: false },
+                    ticks: { color: '#f44336' }
+                }
+            }
+        }
+    });
+
+    // Helper: Reset Zoom function exposed globally
+    window.resetChartZoom = function() {
+        if (window.chart) {
+            window.chart.resetZoom();
+            const btn = document.getElementById('resetZoomBtn');
+            if (btn) btn.style.display = 'none';
+        }
+    };
+
+    // Wire up event listeners if they haven't been wired
+    if (!window._chartCheckboxesWired) {
+        ['showPrice', 'showRSI', 'showMACD', 'showBB'].forEach((id, index) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('change', (e) => {
+                    if (!window.chart) return;
+                    if (id === 'showBB') {
+                        window.chart.data.datasets[3].hidden = !e.target.checked;
+                        window.chart.data.datasets[4].hidden = !e.target.checked;
+                    } else {
+                        window.chart.data.datasets[index].hidden = !e.target.checked;
+                    }
+                    if (id === 'showRSI') window.chart.options.scales.y1.display = e.target.checked;
+                    if (id === 'showMACD') window.chart.options.scales.y2.display = e.target.checked;
+                    window.chart.update();
+                });
+            }
+        });
+        window._chartCheckboxesWired = true;
+    }
+}
+
+// Make function globally accessible
+window.updateChart = updateChart;
+
+function fetchAndUpdate() {
+    const pair = document.getElementById('pairSelect').value;
+    const broker = document.getElementById('brokerSelect').value;
+    
+    if (!pair || pair === "Select Pair") {
+        updateInfoCardAndChart(null);
+        return;
+    }
+    
+    // For Indian markets, don't override template data with API calls
+    // The template already has the correct data
+    if (["NIFTY50", "BANKNIFTY", "SENSEX", "FINNIFTY", "MIDCPNIFTY", 
+         "NIFTYREALTY", "NIFTYPVTBANK", "NIFTYPSUBANK", "NIFTYFIN", "NIFTYMEDIA",
+         "RELIANCE", "TCS", "HDFCBANK", "INFY", "ICICIBANK", "HINDUNILVR", 
+         "SBIN", "BHARTIARTL", "KOTAKBANK", "BAJFINANCE"].includes(pair)) {
+        console.log(`Skipping API call for Indian market: ${pair}`);
+        return;
+    }
+    
+    fetch(`/api/price/${pair}?broker=${encodeURIComponent(broker)}`)
+        .then(response => response.json())
+        .then(data => {
+            updateInfoCardAndChart(data);
+        })
+        .catch(() => {
+            updateInfoCardAndChart(null);
+        });
+}
+
+
+// Chart.js plugin for vertical dashed line on hover
+const dashedLinePlugin = {
+    id: 'dashedLineOnHover',
+    afterDraw: function(chart) {
+        if (chart.tooltip?._active && chart.tooltip._active.length) {
+            const ctx = chart.ctx;
+            ctx.save();
+            const activePoint = chart.tooltip._active[0];
+            ctx.beginPath();
+            ctx.setLineDash([5, 5]);
+            ctx.moveTo(activePoint.element.x, chart.chartArea.top);
+            ctx.lineTo(activePoint.element.x, chart.chartArea.bottom);
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = '#ff512f';
+            ctx.stroke();
+            ctx.restore();
+        }
+    }
+};
+
+function initializeChart(labels = [], prices = [], sma = [], ema = [], bb_upper = [], bb_lower = []) {
+    const canvas = document.getElementById('priceChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    let datasets = [{
+        label: 'Price',
+        data: prices,
+        borderColor: '#00e6d0',
+        backgroundColor: 'rgba(0, 230, 208, 0.1)',
+        tension: 0.1,
+        fill: false,
+        pointRadius: 1,
+        pointHoverRadius: 3,
+        borderWidth: 2
+    }];
+
+    if (sma.length && ema.length && bb_upper.length && bb_lower.length) {
+        datasets.push(
+            {
+                label: 'SMA',
+                data: sma,
+                borderColor: '#ffb300',
+                borderDash: [6, 4],
+                fill: false,
+                pointRadius: 0,
+                borderWidth: 1.5
+            },
+            {
+                label: 'EMA',
+                data: ema,
+                borderColor: '#e91e63',
+                borderDash: [2, 2],
+                fill: false,
+                pointRadius: 0,
+                borderWidth: 1.5
+            },
+            {
+                label: 'Bollinger Upper',
+                data: bb_upper,
+                borderColor: '#42a5f5',
+                borderDash: [8, 4],
+                fill: false,
+                pointRadius: 0,
+                borderWidth: 1
+            },
+            {
+                label: 'Bollinger Lower',
+                data: bb_lower,
+                borderColor: '#42a5f5',
+                borderDash: [8, 4],
+                fill: false,
+                pointRadius: 0,
+                borderWidth: 1
+            }
+        );
+    }
+
+    priceChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#fff'
+                    }
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: '#fff'
+                    }
+                },
+                x: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: '#fff'
+                    }
+                }
+            }
+        },
+        plugins: [dashedLinePlugin]
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const pairSelect = document.getElementById('pairSelect');
+    const selectedPair = pairSelect.value;
+    
+    // Only start updates if a valid pair is selected
+    if (selectedPair && selectedPair !== "Select Pair") {
+        fetchAndUpdate();
+        updateInterval = setInterval(fetchAndUpdate, 5000);
+    } else {
+        // Clear the display if no pair is selected
+        updateInfoCardAndChart(null);
+    }
+
+    // Handle broker selection
+    const brokerSelect = document.getElementById('brokerSelect');
+    if (brokerSelect) {
+        brokerSelect.addEventListener('change', function() {
+            const broker = this.value;
+            const payouts = {
+                "Zerodha": 0.75,
+                "Upstox": 0.78,
+                "Angel One": 0.77,
+                "Groww": 0.76,
+                "ICICI Direct": 0.75,
+                "HDFC Securities": 0.74
+            };
+            const payout = payouts[broker] || 0.75;
+            const sbEl = document.getElementById('selectedBroker');
+            if (sbEl) sbEl.textContent = broker;
+            const pvEl = document.getElementById('payoutVal');
+            if (pvEl) pvEl.textContent = `${Math.round(payout * 100)}%`;
+            // Trigger a new fetch with the updated broker
+            fetchAndUpdate();
+        });
+    }
+
+    // Toggle signals visibility
+    const toggleButton = document.getElementById('toggleSignals');
+    const signalsContainer = document.getElementById('signalsContainer');
+    
+    if (toggleButton && signalsContainer) {
+        toggleButton.addEventListener('click', function() {
+            const isVisible = !signalsContainer.classList.contains('hidden');
+            
+            if (isVisible) {
+                signalsContainer.classList.add('hidden');
+                toggleButton.innerHTML = '<i class="fas fa-chevron-down"></i> Click to Show Generated Signals';
+            } else {
+                signalsContainer.classList.remove('hidden');
+                toggleButton.innerHTML = '<i class="fas fa-chevron-up"></i> Click to Hide Generated Signals';
+            }
+        });
+    }
+    
+    // Auto-Trading System will be initialized in the main DOMContentLoaded handler below
+});
+
+// Start of merged third script block content
+// Auto-Trading System Functions
+function initializeAutoTrading(retryCount = 0) {
+    console.log('Initializing auto-trading...');
+    const startBtn = document.getElementById('start-auto-trading');
+    const stopBtn = document.getElementById('stop-auto-trading');
+    const statusSpan = document.getElementById('auto-trading-status');
+    
+    console.log('Start button:', startBtn);
+    console.log('Stop button:', stopBtn);
+    console.log('Status span:', statusSpan);
+    
+    if (startBtn && stopBtn && statusSpan) {
+        console.log('Adding event listeners...');
+        
+        // Clear any existing event listeners using cloneNode to prevent duplicate bindings
+        const newStartBtn = startBtn.cloneNode(true);
+        startBtn.parentNode.replaceChild(newStartBtn, startBtn);
+        
+        const newStopBtn = stopBtn.cloneNode(true);
+        stopBtn.parentNode.replaceChild(newStopBtn, stopBtn);
+        
+        newStartBtn.addEventListener('click', function() {
+            console.log('Start button clicked!');
+            startAutoTrading();
+        });
+        
+        newStopBtn.addEventListener('click', function() {
+            console.log('Stop button clicked!');
+            stopAutoTrading();
+        });
+        
+        console.log('Event listeners added successfully');
+        
+        // Check current auto trading status on page load
+        checkAutoTradingStatus();
+    } else {
+        if (retryCount < 5) {
+            console.warn(`Auto-trading elements not found. Retrying in 500ms... (Attempt ${retryCount + 1}/5)`);
+            setTimeout(() => initializeAutoTrading(retryCount + 1), 500);
+        } else {
+            console.error('Some auto-trading elements not found after retries:', {startBtn, stopBtn, statusSpan});
+        }
+    }
+}
+
+function checkAutoTradingStatus() {
+    console.log('Checking auto trading status...');
+    fetch('/indian_status')
+        .then(response => {
+            console.log('Response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Auto trading status received:', data);
+            const statusStr = data.status.toLowerCase();
+            const isThreadRunning = (statusStr !== 'stopped');
+            updateAutoTradingUI(isThreadRunning, statusStr);
+        })
+        .catch(error => {
+            console.error('Error checking auto trading status:', error);
+            // Default to stopped state if there's an error
+            updateAutoTradingUI(false, 'stopped');
+        });
+}
+
+function updateAutoTradingUI(isRunning, statusStr) {
+    const startBtn = document.getElementById('start-auto-trading');
+    const stopBtn = document.getElementById('stop-auto-trading');
+    const statusSpan = document.getElementById('auto-trading-status');
+    
+    if (isRunning) {
+        let text = 'Running';
+        let color = '#28a745';
+        if (statusStr === 'paused (holiday)') {
+            text = 'Paused (Holiday)';
+            color = '#ffa000';
+        } else if (statusStr === 'closed (weekend)') {
+            text = 'Paused (Weekend)';
+            color = '#ffa000';
+        } else if (statusStr === 'sleeping (market closed)') {
+            text = 'Sleeping (Closed)';
+            color = '#ffa000';
+        }
+        
+        statusSpan.textContent = text;
+        statusSpan.style.color = color;
+        startBtn.style.display = 'none';
+        stopBtn.style.display = 'inline-block';
+    } else {
+        statusSpan.textContent = 'Stopped';
+        statusSpan.style.color = '#ff6b6b';
+        startBtn.style.display = 'inline-block';
+        stopBtn.style.display = 'none';
+    }
+}
+
+function startAutoTrading() {
+    console.log('Starting auto-trading...');
+    showNotification('🔄 Starting Indian Auto-Trading...', 'info');
+    
+    fetch('/start_indian_auto_trading')
+        .then(response => {
+            console.log('Response received:', response);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Data received:', data);
+            if (data.status === 'running') {
+                updateAutoTradingUI(true);
+                refreshTradingDashboard();
+                showNotification('✅ Indian Auto-Trading Started Successfully!', 'success');
+            } else {
+                showNotification('❌ Failed to start auto-trading: ' + (data.error || 'Unknown error'), 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error starting auto-trading:', error);
+            showNotification('❌ Error starting auto-trading', 'error');
+        });
+}
+
+function stopAutoTrading() {
+    fetch('/stop_indian_auto_trading')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'stopped') {
+                updateAutoTradingUI(false);
+                refreshTradingDashboard();
+                showNotification('⏹️ Indian Auto-Trading Stopped Successfully!', 'success');
+            } else {
+                showNotification('❌ Failed to stop auto-trading: ' + (data.error || 'Unknown error'), 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error stopping auto-trading:', error);
+            showNotification('❌ Error stopping auto-trading', 'error');
+        });
+}
+
+// Real-Time Signals System
+function initializeRealTimeSignals(retryCount = 0) {
+    console.log('Initializing real-time signals...');
+    const refreshBtn = document.getElementById('refresh-signals');
+    const autoRefreshBtn = document.getElementById('auto-refresh-toggle');
+    
+    console.log('Refresh button:', refreshBtn);
+    console.log('Auto-refresh button:', autoRefreshBtn);
+    
+    if (refreshBtn && autoRefreshBtn) {
+        console.log('Adding signal event listeners...');
+        
+        // Clear any existing event listeners using cloneNode to prevent duplicate bindings
+        const newRefreshBtn = refreshBtn.cloneNode(true);
+        refreshBtn.parentNode.replaceChild(newRefreshBtn, refreshBtn);
+        
+        const newAutoRefreshBtn = autoRefreshBtn.cloneNode(true);
+        autoRefreshBtn.parentNode.replaceChild(newAutoRefreshBtn, autoRefreshBtn);
+        
+        newRefreshBtn.addEventListener('click', function() {
+            console.log('Refresh signals clicked!');
+            fetchRealTimeSignals();
+        });
+        
+        newAutoRefreshBtn.addEventListener('click', function() {
+            console.log('Auto-refresh toggle clicked!');
+            toggleAutoRefresh();
+        });
+        
+        console.log('Signal event listeners added successfully');
+    } else {
+        if (retryCount < 5) {
+            console.warn(`Signal elements not found. Retrying in 500ms... (Attempt ${retryCount + 1}/5)`);
+            setTimeout(() => initializeRealTimeSignals(retryCount + 1), 500);
+        } else {
+            console.error('Some signal elements not found after retries:', {refreshBtn, autoRefreshBtn});
+        }
+    }
+}
+
+let autoRefreshInterval = null;
+let autoRefreshEnabled = false;
+
+function toggleAutoRefresh() {
+    const btn = document.getElementById('auto-refresh-toggle');
+    
+    if (autoRefreshEnabled) {
+        // Disable auto-refresh
+        if (autoRefreshInterval) {
+            clearInterval(autoRefreshInterval);
+            autoRefreshInterval = null;
+        }
+        autoRefreshEnabled = false;
+        btn.textContent = '🔄 Auto-Refresh: OFF';
+        btn.style.background = '#6c757d';
+    } else {
+        // Enable auto-refresh
+        autoRefreshEnabled = true;
+        btn.textContent = '🔄 Auto-Refresh: ON';
+        btn.style.background = '#28a745';
+        
+        // Start auto-refresh every 30 seconds
+        autoRefreshInterval = setInterval(fetchRealTimeSignals, 30000);
+        
+        // Fetch immediately
+        fetchRealTimeSignals();
+    }
+}
+
+function fetchRealTimeSignals() {
+    console.log('Fetching real-time signals...');
+    const signalsContainer = document.getElementById('real-time-signals');
+    
+    if (!signalsContainer) {
+        console.error('Signals container not found!');
+        return;
+    }
+    
+    showNotification('🔄 Fetching signals...', 'info');
+    
+    fetch('/indian_signals')
+        .then(response => {
+            console.log('Signals response:', response);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Signals data received:', data);
+            if (data.signals && data.signals.length > 0) {
+                displayRealTimeSignals(data.signals);
+                showNotification(`✅ Found ${data.signals.length} trading signals!`, 'success');
+            } else {
+                signalsContainer.innerHTML = `
+                    <div class="signal-placeholder" style="text-align: center; color: #aaa; padding: 40px;">
+                        <div style="font-size: 1.2em; margin-bottom: 10px;">📊</div>
+                        <div>No active signals at the moment</div>
+                        <div style="font-size: 0.9em; margin-top: 10px;">Check back later for new opportunities</div>
+                    </div>
+                `;
+                showNotification('📊 No active signals at the moment', 'info');
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching signals:', error);
+            signalsContainer.innerHTML = `
+                <div class="signal-placeholder" style="text-align: center; color: #aaa; padding: 40px;">
+                    <div style="font-size: 1.2em; margin-bottom: 10px;">❌</div>
+                    <div>Error fetching signals</div>
+                    <div style="font-size: 0.9em; margin-top: 10px;">Please try again later</div>
+                </div>
+            `;
+            showNotification('❌ Error fetching signals: ' + error.message, 'error');
+        });
+}
+
+function displayRealTimeSignals(signals) {
+    const signalsContainer = document.getElementById('real-time-signals');
+    
+    const signalsHTML = signals.map(signal => {
+        const signalColor = signal.signal_type === 'BUY' ? '#28a745' : '#dc3545';
+        const signalIcon = signal.signal_type === 'BUY' ? '📈' : '📉';
+        const confidenceColor = signal.confidence > 0.8 ? '#28a745' : signal.confidence > 0.6 ? '#ffc107' : '#dc3545';
+        
+        return `
+            <div class="signal-card" style="background: rgba(255,255,255,0.07); border-radius: 12px; padding: 20px; box-shadow: 0 2px 16px #0002; border-left: 4px solid ${signalColor};">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <div style="font-size: 1.2em; font-weight: bold; color: ${signalColor};">
+                        ${signalIcon} ${signal.symbol}
+                    </div>
+                    <div style="background: ${signalColor}; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold;">
+                        ${signal.signal_type}
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="color: #aaa;">Confidence:</span>
+                        <span style="color: ${confidenceColor}; font-weight: bold;">${Math.round(signal.confidence * 100)}%</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="color: #aaa;">Strategy:</span>
+                        <span style="color: #fff;">${signal.strategy}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="color: #aaa;">Risk/Reward:</span>
+                        <span style="color: #fff;">${signal.risk_reward_ratio.toFixed(2)}</span>
+                    </div>
+                </div>
+                
+                <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-bottom: 15px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span style="color: #aaa;">Entry:</span>
+                        <span style="color: #fff;">₹${signal.entry_price.toFixed(2)}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span style="color: #aaa;">Target:</span>
+                        <span style="color: #28a745;">₹${signal.target_price.toFixed(2)}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: #aaa;">Stop Loss:</span>
+                        <span style="color: #dc3545;">₹${signal.stop_loss.toFixed(2)}</span>
+                    </div>
+                </div>
+                
+                <div style="font-size: 0.85em; color: #aaa;">
+                    <div style="margin-bottom: 5px;">📊 Sentiment: ${signal.market_sentiment}</div>
+                    <div style="margin-bottom: 5px;">📈 Volume: ${signal.volume_analysis}</div>
+                    <div>⚡ Volatility: ${(signal.volatility * 100).toFixed(2)}%</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    signalsContainer.innerHTML = signalsHTML;
+}
+
+// Notification System
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 8px;
+        color: white;
+        font-weight: bold;
+        z-index: 10000;
+        max-width: 300px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        animation: slideIn 0.3s ease-out;
+    `;
+    
+    if (type === 'success') {
+        notification.style.background = '#28a745';
+    } else if (type === 'error') {
+        notification.style.background = '#dc3545';
+    } else {
+        notification.style.background = '#007bff';
+    }
+    
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 5000);
+}
+
+// Add CSS animation
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+`;
+document.head.appendChild(style);
+
+// Test function for debugging
+function testFunction() {
+    console.log('Test function called!');
+    const testResult = document.getElementById('test-result');
+    if (testResult) {
+        testResult.textContent = '✅ JavaScript is working!';
+        testResult.style.color = '#28a745';
+        
+        // Test if elements exist
+        const startBtn = document.getElementById('start-auto-trading');
+        const stopBtn = document.getElementById('stop-auto-trading');
+        const statusSpan = document.getElementById('auto-trading-status');
+        const refreshBtn = document.getElementById('refresh-signals');
+        const autoRefreshBtn = document.getElementById('auto-refresh-toggle');
+        
+        console.log('Element check:', {
+            startBtn: !!startBtn,
+            stopBtn: !!stopBtn,
+            statusSpan: !!statusSpan,
+            refreshBtn: !!refreshBtn,
+            autoRefreshBtn: !!autoRefreshBtn
+        });
+        
+        setTimeout(() => {
+            testResult.textContent = '';
+        }, 3000);
+    }
+}
+
+// Global test function
+window.testFunction = testFunction;
+
+// Status check function
+function checkIndianStatus() {
+    console.log('Checking Indian status...');
+    const statusResult = document.getElementById('status-result');
+    
+    if (!statusResult) {
+        console.error('Status result element not found!');
+        return;
+    }
+    
+    statusResult.textContent = '🔄 Checking...';
+    
+    fetch('/indian_status')
+        .then(response => {
+            console.log('Status response:', response);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Status data:', data);
+            statusResult.textContent = `Status: ${data.status}, Trades: ${data.active_trades}`;
+            statusResult.style.color = data.status === 'running' ? '#28a745' : '#ff6b6b';
+            
+            // Update the main status display
+            const mainStatus = document.getElementById('auto-trading-status');
+            if (mainStatus) {
+                const statusStr = data.status.toLowerCase();
+                let text = data.status.charAt(0).toUpperCase() + data.status.slice(1);
+                let color = statusStr === 'running' ? '#28a745' : '#ff6b6b';
+                if (statusStr === 'paused (holiday)') {
+                    text = 'Paused (Holiday)';
+                    color = '#ffa000';
+                } else if (statusStr === 'closed (weekend)') {
+                    text = 'Paused (Weekend)';
+                    color = '#ffa000';
+                } else if (statusStr === 'sleeping (market closed)') {
+                    text = 'Sleeping (Closed)';
+                    color = '#ffa000';
+                }
+                mainStatus.textContent = text;
+                mainStatus.style.color = color;
+            }
+            
+            setTimeout(() => {
+                statusResult.textContent = '';
+            }, 5000);
+        })
+        .catch(error => {
+            console.error('Error checking status:', error);
+            statusResult.textContent = '❌ Error: ' + error.message;
+            statusResult.style.color = '#dc3545';
+            
+            setTimeout(() => {
+                statusResult.textContent = '';
+            }, 5000);
+        });
+}
+
+// Global status check function
+window.checkIndianStatus = checkIndianStatus;
+
+// Trading Dashboard Functions
+let dashboardAutoRefreshInterval = null;
+let dashboardAutoRefreshEnabled = false;
+let lastPnlFetchTime = 0;
+let cachedPnlData = null;
+
+function refreshTradingDashboard() {
+    console.log('Refreshing trading dashboard...');
+    
+    // Check if dashboard elements exist
+    const statusIndicator = document.getElementById('trading-status-indicator');
+    const statusText = document.getElementById('trading-status-text');
+    const activeTradesCount = document.getElementById('active-trades-count');
+    const totalPnl = document.getElementById('total-pnl');
+    const winRate = document.getElementById('win-rate');
+    const lastUpdate = document.getElementById('last-update');
+    const activeTradesGrid = document.getElementById('active-trades-grid');
+    const tradesSummary = document.getElementById('trades-summary');
+    
+    if (!statusIndicator || !statusText || !activeTradesCount || !totalPnl || !winRate || !lastUpdate || !activeTradesGrid || !tradesSummary) {
+        console.error('Some dashboard elements are missing!');
+        return;
+    }
+    
+    // Single consolidated fetch request for optimal performance and rate-limit safety
+    fetch('/indian_status')
+        .then(response => {
+            if (response.status === 401) {
+                throw new Error('Not authenticated');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (!data || data.error) {
+                throw new Error(data ? data.error : 'Invalid response');
+            }
+            updateDashboardStatus(data);
+            updateDashboardStats(data);
+            updateActiveTrades(data);
+            updateLastUpdateTime();
+            console.log('Dashboard refresh complete');
+        })
+        .catch(error => {
+            console.error('Error in refreshTradingDashboard:', error);
+            if (error.message === 'Not authenticated') {
+                if (statusIndicator) {
+                    statusIndicator.style.background = '#ffc107';
+                    statusIndicator.style.boxShadow = '0 0 8px #ffc107';
+                }
+                if (statusText) {
+                    statusText.textContent = 'Session Expired — Please Login';
+                    statusText.style.color = '#ffc107';
+                }
+            } else {
+                if (statusIndicator) {
+                    statusIndicator.style.background = '#ff6b6b';
+                    statusIndicator.style.boxShadow = '0 0 8px #ff6b6b';
+                }
+                if (statusText) {
+                    statusText.textContent = 'Stopped (Connection Lost)';
+                    statusText.style.color = '#ff6b6b';
+                }
+            }
+        });
+}
+
+function toggleDashboardAutoRefresh() {
+    const btn = document.getElementById('auto-refresh-dashboard');
+    
+    if (dashboardAutoRefreshEnabled) {
+        // Disable auto-refresh
+        if (dashboardAutoRefreshInterval) {
+            clearInterval(dashboardAutoRefreshInterval);
+            dashboardAutoRefreshInterval = null;
+        }
+        dashboardAutoRefreshEnabled = false;
+        if (btn) {
+            btn.textContent = '🔄 Auto: OFF';
+            btn.style.background = '#6c757d';
+        }
+    } else {
+        // Enable auto-refresh
+        dashboardAutoRefreshEnabled = true;
+        if (btn) {
+            btn.textContent = '🔄 Auto: ON';
+            btn.style.background = '#28a745';
+        }
+        
+        // Start auto-refresh every 1 second
+        dashboardAutoRefreshInterval = setInterval(refreshTradingDashboard, 1000);
+        
+        // Refresh immediately
+        refreshTradingDashboard();
+    }
+}
+
+function updateDashboardStatus(data = null) {
+    if (!data) {
+        fetch('/indian_status')
+            .then(response => response.json())
+            .then(res => updateDashboardStatusWithData(res))
+            .catch(err => console.error('Error updating status:', err));
+        return;
+    }
+    updateDashboardStatusWithData(data);
+}
+
+function updateDashboardStatusWithData(data) {
+    const statusIndicator = document.getElementById('trading-status-indicator');
+    const statusText = document.getElementById('trading-status-text');
+    const statusStr = data.status.toLowerCase();
+    
+    if (statusStr === 'running') {
+        statusIndicator.style.background = '#28a745';
+        statusIndicator.style.boxShadow = '0 0 8px #28a745';
+        statusText.textContent = 'Running';
+        statusText.style.color = '#28a745';
+    } else if (statusStr === 'paused (holiday)') {
+        statusIndicator.style.background = '#ffa000';
+        statusIndicator.style.boxShadow = '0 0 8px #ffa000';
+        statusText.textContent = 'Holiday Pause (Sleeping)';
+        statusText.style.color = '#ffa000';
+    } else if (statusStr === 'closed (weekend)') {
+        statusIndicator.style.background = '#ffa000';
+        statusIndicator.style.boxShadow = '0 0 8px #ffa000';
+        statusText.textContent = 'Weekend Pause (Sleeping)';
+        statusText.style.color = '#ffa000';
+    } else if (statusStr === 'sleeping (market closed)') {
+        statusIndicator.style.background = '#ffa000';
+        statusIndicator.style.boxShadow = '0 0 8px #ffa000';
+        statusText.textContent = 'Market Closed (Sleeping)';
+        statusText.style.color = '#ffa000';
+    } else {
+        statusIndicator.style.background = '#ff6b6b';
+        statusIndicator.style.boxShadow = '0 0 8px #ff6b6b';
+        statusText.textContent = 'Stopped';
+        statusText.style.color = '#ff6b6b';
+    }
+    
+    // Keep auto trading buttons state in sync
+    const isThreadRunning = (statusStr !== 'stopped');
+    const startBtn = document.getElementById('start-indian-trading');
+    const stopBtn = document.getElementById('stop-indian-trading');
+    if (startBtn && stopBtn) {
+        if (isThreadRunning) {
+            startBtn.disabled = true;
+            startBtn.style.opacity = '0.5';
+            stopBtn.disabled = false;
+            stopBtn.style.opacity = '1';
+        } else {
+            startBtn.disabled = false;
+            startBtn.style.opacity = '1';
+            stopBtn.disabled = true;
+            stopBtn.style.opacity = '0.5';
+        }
+    }
+}
+
+function updateDashboardStats(data = null) {
+    if (!data) {
+        fetch('/indian_status')
+            .then(response => response.json())
+            .then(res => updateDashboardStatsWithData(res))
+            .catch(err => console.error('Error updating stats:', err));
+        return;
+    }
+    updateDashboardStatsWithData(data);
+}
+
+function updateDashboardStatsWithData(statusData) {
+    const startEl = document.getElementById('pnl-start');
+    const endEl = document.getElementById('pnl-end');
+    const start = startEl && startEl.value ? startEl.value : '';
+    const end = endEl && endEl.value ? endEl.value : start;
+
+    const activeTradesCount = document.getElementById('active-trades-count');
+    if (activeTradesCount) {
+        activeTradesCount.textContent = statusData.active_trades || 0;
+    }
+
+    const totalPnl = document.getElementById('total-pnl');
+    
+    // 1. Update Total P&L instantly from status data (which has the real-time micro-fluctuations!)
+    if (totalPnl && statusData && typeof statusData.total_pnl !== 'undefined') {
+        const val = Number(statusData.total_pnl) || 0;
+        const prevVal = parseFloat(totalPnl.getAttribute('data-value') || 0);
+        
+        totalPnl.textContent = `₹${val.toFixed(2)}`;
+        totalPnl.style.color = val >= 0 ? '#4ecdc4' : '#ff6b6b';
+        
+        if (val !== prevVal) {
+            totalPnl.setAttribute('data-value', val.toFixed(2));
+            totalPnl.classList.remove('tick-up-animate', 'tick-down-animate');
+            void totalPnl.offsetWidth; // Trigger reflow
+            if (val > prevVal) {
+                totalPnl.classList.add('tick-up-animate');
+            } else {
+                totalPnl.classList.add('tick-down-animate');
+            }
+        }
+    }
+
+    // 2. Fetch P&L historical summary only once every 10 seconds or when active trades count changes
+    const now = Date.now();
+    const activeTradesChanged = (window.lastActiveTradesCount !== undefined && window.lastActiveTradesCount !== statusData.active_trades);
+    window.lastActiveTradesCount = statusData.active_trades;
+
+    if (!cachedPnlData || now - lastPnlFetchTime > 10000 || activeTradesChanged) {
+        lastPnlFetchTime = now;
+        const pnlReq = (start || end)
+            ? fetch(`/portfolio/pnl_by_date?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`).then(r => r.json())
+            : fetch('/portfolio/summary').then(r => r.json());
+
+        pnlReq.then(pnlData => {
+            cachedPnlData = pnlData;
+            renderPnlStats(pnlData, statusData);
+        }).catch(error => {
+            console.error('Error fetching P&L summary:', error);
+        });
+    } else {
+        // Use cached data
+        renderPnlStats(cachedPnlData, statusData);
+    }
+}
+
+function renderPnlStats(pnlData, statusData) {
+    const profitEl = document.getElementById('pnl-profit');
+    const lossEl = document.getElementById('pnl-loss');
+    const portfolioEl = document.getElementById('pnl-portfolio');
+    const winRate = document.getElementById('win-rate');
+
+    if (pnlData) {
+        if (profitEl && typeof pnlData.total_profit !== 'undefined') {
+            profitEl.textContent = `▲ ₹${Number(pnlData.total_profit||0).toFixed(2)} (${Number(pnlData.profit_pct||0).toFixed(0)}%)`;
+        }
+        if (lossEl && typeof pnlData.total_loss !== 'undefined') {
+            lossEl.textContent = `▼ ₹${Number(pnlData.total_loss||0).toFixed(2)} (${Number(pnlData.loss_pct||0).toFixed(0)}%)`;
+        }
+        if (portfolioEl && typeof pnlData.portfolio_value !== 'undefined') {
+            portfolioEl.textContent = `💼 ₹${Number(pnlData.portfolio_value||0).toFixed(2)}`;
+        }
+    }
+
+    if (winRate) {
+        if (pnlData && typeof pnlData.win_rate !== 'undefined') {
+            winRate.textContent = `${Number(pnlData.win_rate).toFixed(0)}%`;
+        } else if (statusData && typeof statusData.win_rate !== 'undefined') {
+            winRate.textContent = `${Number(statusData.win_rate).toFixed(0)}%`;
+        }
+    }
+}
+
+function updateActiveTrades(data = null) {
+    if (!data) {
+        fetch('/indian_status')
+            .then(response => response.json())
+            .then(res => updateActiveTradesWithData(res))
+            .catch(err => console.error('Error updating active trades:', err));
+        return;
+    }
+    updateActiveTradesWithData(data);
+}
+
+function updateActiveTradesWithData(data) {
+    console.log('Updating active trades in-place...');
+    const activeTradesGrid = document.getElementById('active-trades-grid');
+    const tradesSummary = document.getElementById('trades-summary');
+
+    if (!activeTradesGrid || !tradesSummary) {
+        console.error('Active trades elements not found:', {activeTradesGrid, tradesSummary});
+        return;
+    }
+
+    const trades = (data.trades && Array.isArray(data.trades)) ? data.trades : [];
+    
+    // Check if we need to do a full rebuild of the DOM
+    const existingCards = activeTradesGrid.querySelectorAll('.trade-card');
+    let needsFullRebuild = false;
+    
+    if (existingCards.length !== trades.length || existingCards.length === 0 || activeTradesGrid.querySelector('.no-trades-placeholder') || activeTradesGrid.querySelector('.error-placeholder')) {
+        needsFullRebuild = true;
+    } else {
+        // Verify all IDs match
+        const currentIds = new Set(trades.map(t => String(t.id)));
+        existingCards.forEach(card => {
+            const cardId = card.getAttribute('data-trade-id');
+            if (!currentIds.has(cardId)) {
+                needsFullRebuild = true;
+            }
+        });
+    }
+
+    if (needsFullRebuild) {
+        if (trades.length > 0) {
+            const tradesHTML = generateActiveTradesHTML(trades);
+            activeTradesGrid.innerHTML = tradesHTML;
+            tradesSummary.textContent = `${trades.length} active trade(s)`;
+            activeTradesGrid.style.opacity = '1';
+        } else if (data.active_trades > 0 && trades.length === 0) {
+            activeTradesGrid.innerHTML = `
+                <div class="no-trades-placeholder" style="text-align: center; color: #aaa; padding: 40px; background: rgba(0,0,0,0.2); border-radius: 10px; border: 1px dashed rgba(255,255,255,0.2);">
+                    <div style="font-size: 2em; margin-bottom: 10px;">⏳</div>
+                    <div>${data.active_trades} active trade(s) running</div>
+                    <div style="font-size: 0.9em; margin-top: 10px; color: #888;">Trade details will appear shortly</div>
+                </div>
+            `;
+            tradesSummary.textContent = `${data.active_trades} active trade(s)`;
+        } else {
+            activeTradesGrid.innerHTML = `
+                <div class="no-trades-placeholder" style="text-align: center; color: #aaa; padding: 40px; background: rgba(0,0,0,0.2); border-radius: 10px; border: 1px dashed rgba(255,255,255,0.2);">
+                    <div style="font-size: 2em; margin-bottom: 10px;">📈</div>
+                    <div>No active trades at the moment</div>
+                    <div style="font-size: 0.9em; margin-top: 10px; color: #888;">Trades will appear here when auto-trading is active</div>
+                </div>
+            `;
+            tradesSummary.textContent = 'No active trades';
+        }
+    } else {
+        // High-performance DOM update in-place with green/red ticking animation
+        trades.forEach(trade => {
+            const card = activeTradesGrid.querySelector(`[data-trade-id="${trade.id}"]`);
+            if (card) {
+                // Update Current Price
+                const priceEl = card.querySelector('.trade-current-price');
+                if (priceEl) {
+                    const newPriceVal = parseFloat(trade.current_price || 0);
+                    const prevPriceVal = parseFloat(priceEl.getAttribute('data-value') || 0);
+                    
+                    priceEl.textContent = `₹${newPriceVal.toFixed(2)}`;
+                    priceEl.setAttribute('data-value', newPriceVal.toFixed(2));
+                    
+                    if (newPriceVal !== prevPriceVal && prevPriceVal > 0) {
+                        priceEl.classList.remove('tick-up-animate', 'tick-down-animate');
+                        void priceEl.offsetWidth; // Trigger reflow
+                        if (newPriceVal > prevPriceVal) {
+                            priceEl.classList.add('tick-up-animate');
+                        } else {
+                            priceEl.classList.add('tick-down-animate');
+                        }
+                    }
+                }
+
+                // Update Duration
+                const durEl = card.querySelector('.trade-duration');
+                if (durEl) {
+                    durEl.textContent = trade.duration || '-';
+                }
+
+                // Update P&L
+                const pnlContainer = card.querySelector('.trade-pnl');
+                const pnlTextEl = card.querySelector('.trade-pnl-text');
+                if (pnlTextEl && pnlContainer) {
+                    const newPnlVal = parseFloat(trade.pnl || 0);
+                    const prevPnlVal = parseFloat(pnlTextEl.getAttribute('data-pnl-val') || 0);
+                    const pnlPct = parseFloat(trade.pnl_percentage || 0);
+                    const isProfit = newPnlVal >= 0;
+                    const pnlColor = isProfit ? '#28a745' : '#dc3545';
+                    const pnlIcon = isProfit ? '📈' : '📉';
+
+                    pnlTextEl.setAttribute('data-pnl-val', newPnlVal.toFixed(2));
+                    
+                    // Update P&L sub-elements
+                    const iconEl = pnlTextEl.querySelector('.pnl-icon');
+                    const amtEl = pnlTextEl.querySelector('.pnl-amount');
+                    const pctEl = pnlTextEl.querySelector('.pnl-pct');
+                    
+                    if (iconEl) iconEl.textContent = pnlIcon;
+                    if (amtEl) amtEl.textContent = `₹${newPnlVal.toFixed(2)}`;
+                    if (pctEl) pctEl.textContent = `(${pnlPct.toFixed(2)}%)`;
+                    
+                    // Style adjustments
+                    pnlContainer.style.borderLeftColor = pnlColor;
+                    pnlTextEl.style.color = pnlColor;
+                    
+                    // P&L Flash on change
+                    if (newPnlVal !== prevPnlVal && prevPnlVal !== 0) {
+                        pnlTextEl.classList.remove('tick-up-animate', 'tick-down-animate');
+                        void pnlTextEl.offsetWidth; // Trigger reflow
+                        if (newPnlVal > prevPnlVal) {
+                            pnlTextEl.classList.add('tick-up-animate');
+                        } else {
+                            pnlTextEl.classList.add('tick-down-animate');
+                        }
+                    }
+                }
+            }
+        });
+    }
+}
+
+function generateActiveTradesHTML(trades) {
+    if (!Array.isArray(trades) || trades.length === 0) return '';
+    return trades.map(trade => {
+        const entryPrice = parseFloat(trade.entry_price || 0);
+        const currentPrice = parseFloat(trade.current_price || entryPrice);
+        const pnl = parseFloat(trade.pnl || 0);
+        const pnlPct = parseFloat(trade.pnl_percentage || 0);
+        const isProfit = pnl >= 0;
+        const pnlColor = isProfit ? '#28a745' : '#dc3545';
+        const pnlIcon = isProfit ? '📈' : '📉';
+        const typeUpper = (trade.type || 'BUY').toUpperCase();
+        const typeColor = typeUpper === 'BUY' ? '#28a745' : '#dc3545';
+        const qty = parseInt(trade.quantity || 0, 10);
+
+        return `
+            <div class="trade-card" data-trade-id="${trade.id}" style="background: rgba(255,255,255,0.07); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.1); transition: all 0.3s ease;">
+                <div class="trade-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 1.5em;">${trade.symbol === 'NIFTY50' ? '📊' : trade.symbol === 'BANKNIFTY' ? '🏦' : '💼'}</span>
+                        <div>
+                            <div style="font-size: 1.2rem; font-weight: bold; color: #fff;">${trade.symbol}</div>
+                            <div style="font-size: 0.8rem; color: #aaa;">${trade.strategy || 'Auto'}</div>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="background: ${typeColor}; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold;">
+                            ${typeUpper}
+                        </div>
+                        <div style="font-size: 0.7rem; color: #aaa; margin-top: 2px;">${trade.entry_time}</div>
+                    </div>
+                </div>
+
+                <div class="trade-details" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                    <div>
+                        <div style="color: #aaa; font-size: 0.8rem;">Entry Price</div>
+                        <div style="color: #fff; font-weight: bold;">₹${entryPrice.toFixed(2)}</div>
+                    </div>
+                    <div>
+                        <div style="color: #aaa; font-size: 0.8rem;">Current Price</div>
+                        <div class="trade-current-price" style="color: #fff; font-weight: bold; transition: background-color 0.4s ease, padding 0.2s ease; border-radius: 4px;" data-symbol="${trade.symbol}" data-value="${currentPrice.toFixed(2)}">₹${currentPrice.toFixed(2)}</div>
+                    </div>
+                    <div>
+                        <div style="color: #aaa; font-size: 0.8rem;">Quantity</div>
+                        <div style="color: #fff; font-weight: bold;">${qty}</div>
+                    </div>
+                    <div>
+                        <div style="color: #aaa; font-size: 0.8rem;">Duration</div>
+                        <div class="trade-duration" style="color: #fff; font-weight: bold;">${trade.duration || '-'}</div>
+                    </div>
+                </div>
+
+                <div class="trade-pnl" style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; text-align: center; border-left: 4px solid ${pnlColor}; transition: border-left-color 0.3s ease;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="color: #aaa; font-size: 0.9rem;">P&L</span>
+                        <span class="trade-pnl-text" style="color: ${pnlColor}; font-size: 1.1rem; font-weight: bold; transition: color 0.3s ease, background-color 0.4s ease; display: flex; align-items: center; gap: 5px; border-radius: 4px;" data-pnl-val="${pnl.toFixed(2)}">
+                            <span class="pnl-icon">${pnlIcon}</span> <span class="pnl-amount">₹${pnl.toFixed(2)}</span> <span class="pnl-pct">(${pnlPct.toFixed(2)}%)</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function updateLastUpdateTime() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString();
+    const lastUpdate = document.getElementById('last-update');
+    if (lastUpdate) {
+        lastUpdate.textContent = timeString;
+    }
+}
+
+// Angel One status helpers
+async function loadAngelStatus() {
+    const el = document.getElementById('angel-status');
+    if (!el) return;
+    try {
+        const res = await fetch('/api/angel_one/status');
+        const data = await res.json();
+        if (data.status === 'connected') {
+            el.textContent = 'Connected';
+            el.style.color = '#28a745';
+        } else if (data.status === 'demo') {
+            el.textContent = 'Connected (Demo)';
+            el.style.color = '#00e6d0';
+        } else if (data.status === 'mock') {
+            el.textContent = 'Demo (Mock)';
+            el.style.color = '#00e6d0';
+        } else if (data.status === 'not_configured') {
+            el.textContent = 'Not Configured';
+            el.style.color = '#ffc107';
+        } else {
+            el.textContent = 'Disconnected';
+            el.style.color = '#ff6b6b';
+        }
+    } catch (e) {
+        el.textContent = 'Error';
+        el.style.color = '#ff6b6b';
+        console.error('Angel status error:', e);
+    }
+}
+
+async function refreshAngelSession() {
+    const btn = document.getElementById('angel-refresh');
+    const el = document.getElementById('angel-status');
+    if (btn) { btn.disabled = true; btn.textContent = 'Refreshing...'; }
+    try {
+        const res = await fetch('/api/angel_one/refresh', { method: 'POST' });
+        const data = await res.json();
+        console.log('Angel refresh:', data);
+        await loadAngelStatus();
+    } catch (e) {
+        console.error('Angel refresh error:', e);
+        if (el) { el.textContent = 'Refresh Failed'; el.style.color = '#ff6b6b'; }
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Refresh Session'; }
+    }
+}
+
+// Seed simulation and refresh dashboard
+async function seedSimulation() {
+    try {
+        // Enable simulation
+        await fetch('/simulation/on');
+        // Start auto trading
+        await fetch('/start_indian_auto_trading');
+        // Seed today's trades
+        const res = await fetch('/admin/seed_sim', { method: 'POST' });
+        const data = await res.json();
+        console.log('Seed result:', data);
+        // Set date range to today
+        const d = new Date();
+        const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        const startEl = document.getElementById('pnl-start');
+        const endEl = document.getElementById('pnl-end');
+        if (startEl) startEl.value = iso;
+        if (endEl) endEl.value = iso;
+        // Refresh P&L and dashboard
+        if (typeof refreshPnlByDate === 'function') refreshPnlByDate();
+        if (typeof refreshTradingDashboard === 'function') refreshTradingDashboard();
+        // Optionally disable simulation after seeding
+        setTimeout(() => { fetch('/simulation/off'); }, 3000);
+    } catch (e) {
+        console.error('Seed simulation failed:', e);
+        alert('Simulation failed: ' + e.message);
+    }
+}
+
+function refreshPnlByDate() {
+    const startEl = document.getElementById('pnl-start');
+    const endEl = document.getElementById('pnl-end');
+    const start = startEl && startEl.value ? startEl.value : '';
+    const end = endEl && endEl.value ? endEl.value : start;
+    if (!start && !end) {
+        // No dates selected; fall back to summary
+        fetch('/portfolio/summary')
+            .then(r => r.json())
+            .then(data => {
+                const totalPnl = document.getElementById('total-pnl');
+                const val = Number(data.today_pnl || 0);
+                totalPnl.textContent = `₹${val.toFixed(2)}`;
+                totalPnl.style.color = val >= 0 ? '#4ecdc4' : '#ff6b6b';
+            })
+            .catch(err => console.error('Error fetching summary:', err));
+        return;
+    }
+
+    const url = `/portfolio/pnl_by_date?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
+    fetch(url)
+        .then(r => r.json())
+        .then(data => {
+            const totalPnl = document.getElementById('total-pnl');
+            const profitEl = document.getElementById('pnl-profit');
+            const lossEl = document.getElementById('pnl-loss');
+            const portfolioEl = document.getElementById('pnl-portfolio');
+            const val = Number((data && data.range_total) ? data.range_total : 0);
+            totalPnl.textContent = `₹${val.toFixed(2)}`;
+            totalPnl.style.color = val >= 0 ? '#4ecdc4' : '#ff6b6b';
+            if (data) {
+                profitEl.textContent = `▲ ₹${Number(data.total_profit||0).toFixed(2)} (${Number(data.profit_pct||0).toFixed(0)}%)`;
+                lossEl.textContent = `▼ ₹${Number(data.total_loss||0).toFixed(2)} (${Number(data.loss_pct||0).toFixed(0)}%)`;
+                portfolioEl.textContent = `💼 ₹${Number(data.portfolio_value||0).toFixed(2)}`;
+                const winRate = document.getElementById('win-rate');
+                if (winRate && typeof data.win_rate !== 'undefined') {
+                    winRate.textContent = `${Number(data.win_rate).toFixed(0)}%`;
+                }
+            }
+        })
+        .catch(err => console.error('Error fetching P&L by date:', err));
+}
+
+function toggleClosedTrades() {
+    const container = document.getElementById('closed-trades-container');
+    const filters = document.getElementById('closed-trades-filters');
+    const button = document.getElementById('toggle-closed-trades');
+    
+    if (container.style.display === 'none') {
+        container.style.display = 'block';
+        filters.style.display = 'block';
+        button.textContent = '👁️ Hide';
+        // Load closed trades data
+        loadClosedTrades();
+    } else {
+        container.style.display = 'none';
+        filters.style.display = 'none';
+        button.textContent = '👁️ Show';
+    }
+}
+
+function loadClosedTrades() {
+    const container = document.getElementById('closed-trades-container');
+    const filterType = document.getElementById('ct-filter-type').value;
+    const filterSymbol = document.getElementById('ct-filter-symbol').value;
+    const filterFrom = document.getElementById('ct-filter-from').value;
+    const filterTo = document.getElementById('ct-filter-to').value;
+
+    let url = '/indian_closed_trades?filter=' + encodeURIComponent(filterType);
+    if (filterSymbol) url += '&symbol=' + encodeURIComponent(filterSymbol);
+    if (filterFrom) url += '&from=' + encodeURIComponent(filterFrom);
+    if (filterTo) url += '&to=' + encodeURIComponent(filterTo);
+
+    fetch(url)
+        .then(r => r.json())
+        .then(data => {
+            const trades = (data && data.trades) ? data.trades : [];
+            document.getElementById('ct-count').textContent = trades.length + ' trade' + (trades.length !== 1 ? 's' : '');
+            if (trades.length === 0) {
+                container.innerHTML = `
+                    <div class="no-closed-trades" style="text-align: center; color: #aaa; padding: 20px;">
+                        No closed trades yet
+                    </div>
+                `;
+                return;
+            }
+
+            const cards = trades.map(t => {
+                const pnl = Number(t.profit_loss || 0);
+                const isProfit = pnl > 0;
+                const pnlColor = isProfit ? '#28a745' : '#dc3545';
+                const pnlIcon = isProfit ? '✅' : '❌';
+                const direction = (t.direction || '').toUpperCase();
+                const dirBadge = direction === 'BUY' ? '📈 BUY' : '📉 SELL';
+                const exitTime = (t.exit_time || '').split(' ')[1] || t.exit_time || '';
+                const entryTime = (t.entry_time || '').split(' ')[1] || t.entry_time || '';
+                const exitDate = (t.exit_time || '').split(' ')[0] || '';
+                const entryPrice = Number(t.entry_price || 0);
+                const exitPrice = Number(t.exit_price || 0);
+                const qty = Number(t.quantity || 0);
+                return `
+                <div class="closed-trade-item" style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid ${pnlColor};">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: bold; color: #fff; display:flex; gap:8px; align-items:center;">
+                                <span>${t.symbol}</span>
+                                <span style="font-size:0.8rem; background:${direction==='BUY'?'rgba(46,204,113,0.2)':'rgba(231,76,60,0.2)'}; color:${direction==='BUY'?'#2ecc71':'#e74c3c'}; padding:2px 6px; border-radius:4px;">${dirBadge}</span>
+                            </div>
+                            <div style="font-size: 0.8rem; color: #aaa;">${t.status === 'CLOSED' ? 'Closed' : (t.status||'')} • ${entryTime} ➜ ${exitDate} ${exitTime}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="color: ${pnlColor}; font-weight: bold;">
+                                ${pnlIcon} ₹${pnl.toFixed(2)}
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-top:10px; background: rgba(0,0,0,0.15); padding:10px; border-radius:6px;">
+                        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; font-size:0.85rem;">
+                            <div>
+                                <div style="color:#aaa;">Entry Price</div>
+                                <div style="color:#fff; font-weight:600;">₹${entryPrice.toFixed(2)}</div>
+                            </div>
+                            <div>
+                                <div style="color:#aaa;">Exit Price</div>
+                                <div style="color:#fff; font-weight:600;">₹${exitPrice.toFixed(2)}</div>
+                            </div>
+                            <div>
+                                <div style="color:#aaa;">Quantity</div>
+                                <div style="color:#fff; font-weight:600;">${qty}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+
+            container.innerHTML = cards;
+        })
+        .catch(err => {
+            console.error('Failed to load closed trades:', err);
+            container.innerHTML = `
+                <div class="no-closed-trades" style="text-align: center; color: #aaa; padding: 20px;">
+                    Error loading closed trades
+                </div>
+            `;
+        });
+}
+
+// Initialize dashboard when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM Content Loaded - Initializing everything...');
+    
+    // Initialize existing functionality
+    initializeDisplay();
+    
+    // Initialize auto-trading system
+    initializeAutoTrading();
+    initializeRealTimeSignals();
+    
+    // Initialize dashboard with a slight delay to ensure all elements are loaded
+    setTimeout(() => {
+        console.log('Initializing trading dashboard...');
+        // Auto-fill today's date range and fetch P&L
+        try {
+            const startEl = document.getElementById('pnl-start');
+            const endEl = document.getElementById('pnl-end');
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            const iso = `${yyyy}-${mm}-${dd}`;
+            if (startEl) startEl.value = iso;
+            if (endEl) endEl.value = iso;
+            if (typeof refreshPnlByDate === 'function') {
+                refreshPnlByDate();
+            }
+        } catch (e) {
+            console.warn('Failed to auto-set today range:', e);
+        }
+        refreshTradingDashboard();
+        
+        // Load Angel One connection status on page load
+        loadAngelStatus();
+        
+        // Set up dashboard auto-refresh (every 1 second for live prices)
+        dashboardAutoRefreshEnabled = true;
+        const autoRefreshBtn = document.getElementById('auto-refresh-dashboard');
+        if (autoRefreshBtn) {
+            autoRefreshBtn.textContent = '🔄 Auto: ON';
+            autoRefreshBtn.style.background = '#28a745';
+        }
+        dashboardAutoRefreshInterval = setInterval(refreshTradingDashboard, 1000);
+        
+        console.log('Dashboard initialization complete');
+    }, 1000);
+});
+
+// Test dashboard function
+function testDashboard() {
+    console.log('=== TESTING DASHBOARD ===');
+    
+    // Check all dashboard elements
+    const elements = {
+        'trading-status-indicator': document.getElementById('trading-status-indicator'),
+        'trading-status-text': document.getElementById('trading-status-text'),
+        'active-trades-count': document.getElementById('active-trades-count'),
+        'total-pnl': document.getElementById('total-pnl'),
+        'win-rate': document.getElementById('win-rate'),
+        'last-update': document.getElementById('last-update'),
+        'active-trades-grid': document.getElementById('active-trades-grid'),
+        'trades-summary': document.getElementById('trades-summary')
+    };
+    
+    console.log('Dashboard elements status:', elements);
+    
+    // Test API call
+    fetch('/indian_status')
+        .then(response => response.json())
+        .then(data => {
+            console.log('API response:', data);
+            
+            // Update display manually
+            if (elements['active-trades-count']) {
+                elements['active-trades-count'].textContent = data.active_trades || 0;
+            }
+            
+            if (elements['trades-summary']) {
+                elements['trades-summary'].textContent = `${data.active_trades || 0} active trade(s)`;
+            }
+            
+            // Force update active trades
+            updateActiveTrades();
+        })
+        .catch(error => {
+            console.error('API test failed:', error);
+        });
+}
+
+// Global functions
+window.refreshTradingDashboard = refreshTradingDashboard;
+window.toggleDashboardAutoRefresh = toggleDashboardAutoRefresh;
+window.toggleClosedTrades = toggleClosedTrades;
+window.testDashboard = testDashboard;
+</script>
+{% endblock %}

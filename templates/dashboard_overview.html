@@ -1,0 +1,45 @@
+{% extends "dashboard.html" %}
+
+{% block content %}
+<div class="animate-fade-in">
+  <div class="stats-grid" style="margin-bottom:24px;">
+    <div class="stat-card">
+      <div class="stat-label">Total Signals</div>
+      <div class="stat-value text-blue">{{ total if total is not none else 0 }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Active Markets</div>
+      <div class="stat-value">{{ signals|length if signals else 0 }}</div>
+    </div>
+  </div>
+
+  <div class="dash-table-card">
+    <h3>Recent Signals</h3>
+    {% if signals %}
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;">
+      {% for signal in signals %}
+      <div class="card" style="padding:16px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          {% if signal.direction == 'CALL' %}
+          <span class="badge badge-green">BUY</span>
+          {% else %}
+          <span class="badge badge-red">SELL</span>
+          {% endif %}
+          <strong style="color:var(--text-primary);">{{ signal.pair }}</strong>
+        </div>
+        <div style="font-size:0.8rem;color:var(--text-secondary);">
+          <i class="far fa-clock"></i> {{ signal.created_at }}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-state-icon"><i class="fas fa-chart-line"></i></div>
+      <div class="empty-state-title">No Signals Available</div>
+      <div class="empty-state-desc">Signals will appear here once generated.</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

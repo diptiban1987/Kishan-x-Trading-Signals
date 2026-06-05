@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Test - {{ platform_name }}{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;text-align:center;">
+  <div style="width:64px;height:64px;border-radius:50%;background:rgba(0,230,118,0.1);display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+    <i class="fas fa-check-circle" style="font-size:1.5rem;color:var(--accent-green);"></i>
+  </div>
+  <h1 style="font-size:1.5rem;font-weight:700;margin-bottom:8px;">Test Page</h1>
+  <p style="color:var(--text-secondary);font-size:0.95rem;">If you see this page with the premium theme, template rendering is working correctly.</p>
+  <div style="display:flex;gap:10px;margin-top:20px;">
+    <a href="{{ url_for('index') }}" class="btn btn-primary"><i class="fas fa-chart-line"></i> Go to Trading</a>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-ghost"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+
+{% block title %}Signals - {{ platform_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .results-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .rate-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+  }
+  .rate-card h2 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .option-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .option-row:last-of-type {
+    border-bottom: none;
+  }
+  .option-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+  }
+  .option-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .option-value.call { color: var(--accent-green); }
+  .option-value.put { color: var(--accent-red); }
+  .arrow-up { color: var(--accent-green); }
+  .arrow-down { color: var(--accent-red); }
+  .signal-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    transition: border-color var(--transition-fast);
+  }
+  .signal-item:hover {
+    border-color: var(--border-hover);
+  }
+  .signal-time {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+  .signal-pair {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+  }
+  @media (max-width: 768px) {
+    .results-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+    <h1 style="font-size:1.3rem;font-weight:700;margin:0;"><i class="fas fa-chart-line text-blue" style="margin-right:8px;"></i> Generated Signals</h1>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <a href="/download" class="btn btn-ghost btn-sm"><i class="fas fa-download"></i> Download PDF</a>
+      <a href="/" class="btn btn-ghost btn-sm"><i class="fas fa-arrow-left"></i> Back</a>
+    </div>
+  </div>
+
+  {% if current_rate and selected_pair %}
+  <div class="results-grid">
+    <div class="rate-card">
+      <h2><i class="fas fa-chart-simple text-blue"></i> Current Rate — {{ selected_pair }}</h2>
+      <div style="font-size:1.8rem;font-weight:700;color:var(--accent-blue);margin-bottom:8px;" id="rateDisplay">{{ current_rate }}</div>
+      <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:16px;">
+        Broker: {{ selected_broker }} &nbsp;|&nbsp; Payout: <span id="payoutPercent">{{ (payout * 100)|round(0) }}%</span>
+      </div>
+      <div>
+        <div class="option-row">
+          <span class="option-label">Volatility (σ)</span>
+          <span class="option-value" id="volDisplay">{{ volatility }}</span>
+        </div>
+        <div class="option-row">
+          <span class="option-label">Expiry (T)</span>
+          <span class="option-value" id="expiryDisplay">{{ expiry }}</span>
+        </div>
+        <div class="option-row">
+          <span class="option-label">Risk-Free Rate (r)</span>
+          <span class="option-value" id="rfDisplay">{{ risk_free_rate }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="rate-card">
+      <h2><i class="fas fa-coins text-green"></i> Option Pricing</h2>
+      <div style="margin-bottom:16px;">
+        <div class="option-row">
+          <span class="option-label">CALL (Black-Scholes)</span>
+          <span class="option-value call" id="callValue">{{ call_price if call_price is not none else current_rate }}</span>
+        </div>
+        <div class="option-row">
+          <span class="option-label">CALL Market Price</span>
+          <span class="option-value call" id="callMarketValue">{{ current_rate }}</span>
+        </div>
+        <div class="option-row">
+          <span class="option-label">PUT (Black-Scholes)</span>
+          <span class="option-value put" id="putValue">{{ put_price if put_price is not none else current_rate }}</span>
+        </div>
+        <div class="option-row">
+          <span class="option-label">PUT Market Price</span>
+          <span class="option-value put" id="putMarketValue">{{ current_rate }}</span>
+        </div>
+      </div>
+      <div id="priceChange" style="font-size:0.8rem;color:var(--text-muted);"></div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="rate-card" style="margin-bottom:16px;">
+    <h2><i class="fas fa-wave-square text-blue"></i> Price Chart</h2>
+    <div style="height:200px;position:relative;">
+      <canvas id="priceChart"></canvas>
+    </div>
+    <div id="noDataMsg" style="display:none;color:var(--accent-red);text-align:center;margin-top:8px;font-size:0.85rem;">No real-time price data available.</div>
+  </div>
+
+  <div class="rate-card">
+    <h2><i class="fas fa-list text-blue"></i> Generated Signals <span style="font-size:0.8rem;color:var(--text-muted);font-weight:400;">({{ signals|length }})</span></h2>
+    {% if signals %}
+      {% for s in signals %}
+      <div class="signal-item">
+        <div>
+          <div class="signal-pair">{{ s.pair }}</div>
+          <div class="signal-time">{{ s.time }}</div>
+        </div>
+        <span class="badge {% if s.direction == 'CALL' %}badge-green{% else %}badge-red{% endif %}">
+          {{ s.direction }}
+        </span>
+      </div>
+      {% endfor %}
+    {% else %}
+    <div class="empty-state" style="padding:24px;">
+      <div class="empty-state-icon"><i class="fas fa-chart-line"></i></div>
+      <div class="empty-state-title">No Signals Generated</div>
+      <div class="empty-state-desc">Use the signal generator form to create trading signals.</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let priceData = [];
+let priceLabels = [];
+let priceChart = null;
+let prev = { callMarket: null, putMarket: null, call: null, put: null };
+
+function arrowAndPercent(newVal, oldVal) {
+    if (oldVal === null || typeof newVal !== 'number' || typeof oldVal !== 'number') return ['', ''];
+    const diff = newVal - oldVal;
+    const percent = oldVal !== 0 ? (diff / oldVal) * 100 : 0;
+    if (diff > 0) return ['<span class="arrow-up">▲</span>', `<span class="arrow-up">+${percent.toFixed(2)}%</span>`];
+    if (diff < 0) return ['<span class="arrow-down">▼</span>', `<span class="arrow-down">${percent.toFixed(2)}%</span>`];
+    return ['', '<span style="color:var(--text-muted)">0.00%</span>'];
+}
+
+function updatePrices() {
+    let pair = document.querySelector('.signal-pair');
+    if (!pair) return;
+    let broker = 'Quotex';
+    fetch('/api/price/' + pair.textContent)
+        .then(r => r.json())
+        .then(data => {
+            ['call','put','callMarket','putMarket'].forEach(key => {
+                const el = document.getElementById(key + 'Value');
+                const arrowEl = document.getElementById(key + 'Arrow');
+                const pctEl = document.getElementById(key + 'Percent');
+                if (!el) return;
+                const val = data[key === 'callMarket' || key === 'putMarket' ? (key.includes('call') ? 'call' : 'put') : key + '_price'];
+                const v = val !== undefined && val !== null ? val : data.rate;
+                const [arrow, pct] = arrowAndPercent(v, prev[key]);
+                el.textContent = v !== null && v !== undefined ? (typeof v === 'number' ? v.toFixed(6) : v) : 'N/A';
+                if (arrowEl) arrowEl.innerHTML = arrow;
+                if (pctEl) pctEl.innerHTML = pct;
+                prev[key] = v;
+            });
+            const now = new Date();
+            const label = now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+            const noDataMsg = document.getElementById('noDataMsg');
+            if (typeof data.rate === 'number' && !isNaN(data.rate)) {
+                if (priceLabels.length > 30) { priceLabels.shift(); priceData.shift(); }
+                priceLabels.push(label);
+                priceData.push(data.rate);
+                if (priceChart) {
+                    priceChart.data.labels = priceLabels;
+                    priceChart.data.datasets[0].data = priceData;
+                    priceChart.update();
+                }
+                if (noDataMsg) noDataMsg.style.display = 'none';
+            } else {
+                if (noDataMsg) noDataMsg.style.display = 'block';
+            }
+        });
+}
+
+setInterval(updatePrices, 10000);
+
+document.addEventListener('DOMContentLoaded', function() {
+    updatePrices();
+    const ctx = document.getElementById('priceChart');
+    if (ctx) {
+        priceChart = new Chart(ctx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: priceLabels,
+                datasets: [{
+                    label: 'Real-Time Price',
+                    data: priceData,
+                    borderColor: '#00C2FF',
+                    backgroundColor: 'rgba(0,194,255,0.08)',
+                    tension: 0.25,
+                    pointRadius: 2,
+                    borderWidth: 2,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { display: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94A3B8' } },
+                    y: { display: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94A3B8' } }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

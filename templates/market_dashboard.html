@@ -1,0 +1,442 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+.market-filter-group {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+.filter-section-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-color);
+}
+.filter-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+.filter-checkbox-item:hover {
+  background: rgba(255,255,255,0.04);
+}
+.filter-checkbox-item input[type="checkbox"] {
+  accent-color: var(--accent-blue);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+.market-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+.mkt-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: all var(--transition-base);
+}
+.mkt-card:hover {
+  border-color: var(--border-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.mkt-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+.mkt-symbol {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--accent-blue);
+}
+.mkt-badge {
+  font-size: 0.8rem;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+.mkt-badge.pos { background: rgba(0,230,118,0.15); color: var(--accent-green); }
+.mkt-badge.neg { background: rgba(255,77,79,0.15); color: var(--accent-red); }
+.mkt-price-area {
+  padding: 16px;
+  text-align: center;
+  background: var(--bg-primary);
+  margin: 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+.mkt-price-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.mkt-price {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--accent-blue);
+  letter-spacing: 0.5px;
+}
+.mkt-change {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 4px;
+}
+.mkt-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 0 12px 12px;
+}
+.metric {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-primary);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 0.8rem;
+}
+.metric-label {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+.metric-value {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-left: auto;
+  font-size: 0.8rem;
+}
+.filtered-data-container {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  min-height: 60px;
+  margin-top: 12px;
+}
+.filtered-data-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.85rem;
+}
+.filtered-data-item:last-child { border-bottom: none; }
+.graph-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.graph-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+.graph-card canvas {
+  width: 100% !important;
+  height: 260px !important;
+}
+.signal-card-custom {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  margin-bottom: 10px;
+  transition: border-color var(--transition-fast);
+}
+.signal-card-custom:hover {
+  border-color: var(--border-hover);
+}
+.indicator-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  text-align: center;
+}
+.indicator-card small {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  display: block;
+}
+.indicator-card span {
+  font-weight: 600;
+  color: var(--text-primary);
+  display: block;
+  margin-top: 2px;
+  font-size: 0.85rem;
+}
+@media (max-width: 768px) {
+  .market-cards-grid { grid-template-columns: 1fr; }
+  .filter-grid { grid-template-columns: 1fr; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in">
+  <div class="market-filter-group">
+    <div class="filter-grid">
+      <div>
+        <div class="filter-section-title">Currency Pairs</div>
+        {% for symbol in subscribed_symbols %}
+        <label class="filter-checkbox-item">
+          <input type="checkbox" class="filter-checkbox" value="{{ symbol.symbol }}" checked>
+          {{ symbol.symbol }}
+        </label>
+        {% endfor %}
+      </div>
+      <div>
+        <div class="filter-section-title">Market Type</div>
+        <label class="filter-checkbox-item"><input type="checkbox" class="market-type-checkbox" value="forex" checked> Forex</label>
+        <label class="filter-checkbox-item"><input type="checkbox" class="market-type-checkbox" value="otc" checked> OTC</label>
+      </div>
+      <div>
+        <div class="filter-section-title">Display</div>
+        <label class="filter-checkbox-item"><input type="checkbox" class="display-checkbox" value="price" checked> Price Data</label>
+        <label class="filter-checkbox-item"><input type="checkbox" class="display-checkbox" value="indicators" checked> Indicators</label>
+        <label class="filter-checkbox-item"><input type="checkbox" class="display-checkbox" value="charts" checked> Charts</label>
+      </div>
+    </div>
+    <div class="filtered-data-container" id="filtered-data-container">
+      <div style="text-align:center;color:var(--text-muted);font-size:0.85rem;">Select filters to display market data</div>
+    </div>
+  </div>
+
+  <div class="market-cards-grid" id="market-cards">
+    {% for symbol in ['AUDUSD', 'EURUSD', 'GBPUSD', 'USDJPY'] %}
+    <div class="mkt-card" id="card-{{ symbol }}">
+      <div class="mkt-card-header">
+        <span class="mkt-symbol"><i class="fas fa-chart-line" style="margin-right:6px;"></i>{{ symbol }}</span>
+        <span class="mkt-badge" id="change-{{ symbol }}">Loading...</span>
+      </div>
+      <div class="mkt-price-area">
+        <div class="mkt-price-label">Current Price</div>
+        <div class="mkt-price" id="price-{{ symbol }}">Loading...</div>
+        <div class="mkt-change" id="change-pct-{{ symbol }}"></div>
+      </div>
+      <div class="mkt-metrics">
+        <div class="metric"><span class="metric-label"><i class="fas fa-arrow-up text-green"></i> High</span><span class="metric-value" id="high-{{ symbol }}">--</span></div>
+        <div class="metric"><span class="metric-label"><i class="fas fa-arrow-down text-red"></i> Low</span><span class="metric-value" id="low-{{ symbol }}">--</span></div>
+        <div class="metric"><span class="metric-label"><i class="fas fa-hand-holding-usd text-blue"></i> Bid</span><span class="metric-value" id="bid-{{ symbol }}">--</span></div>
+        <div class="metric"><span class="metric-label"><i class="fas fa-money-bill-wave text-warning"></i> Ask</span><span class="metric-value" id="ask-{{ symbol }}">--</span></div>
+        <div class="metric"><span class="metric-label"><i class="fas fa-sliders-h text-info"></i> Spread</span><span class="metric-value" id="spread-pips-{{ symbol }}">--</span></div>
+        <div class="metric"><span class="metric-label"><i class="fas fa-bolt text-secondary"></i> RSI</span><span class="metric-value" id="rsi-{{ symbol }}">--</span></div>
+        <div class="metric"><span class="metric-label"><i class="fas fa-wave-square text-purple"></i> MACD</span><span class="metric-value" id="macd-{{ symbol }}">--</span></div>
+        <div class="metric"><span class="metric-label"><i class="fas fa-chart-area"></i> Volatility</span><span class="metric-value" id="volatility-{{ symbol }}">--</span></div>
+      </div>
+    </div>
+    {% endfor %}
+    {% for symbol in subscribed_symbols %}
+    {% if symbol.symbol not in ['AUDUSD', 'EURUSD', 'GBPUSD', 'USDJPY'] %}
+    <div class="mkt-card" id="card-{{ symbol.symbol }}">
+      <div class="mkt-card-header">
+        <span class="mkt-symbol"><i class="fas fa-chart-line" style="margin-right:6px;"></i>{{ symbol.symbol }}</span>
+        <span class="mkt-badge" id="change-{{ symbol.symbol }}">Loading...</span>
+      </div>
+      <div class="mkt-price-area">
+        <div class="mkt-price-label">Current Price</div>
+        <div class="mkt-price" id="price-{{ symbol.symbol }}">Loading...</div>
+        <div class="mkt-change" id="change-pct-{{ symbol.symbol }}"></div>
+      </div>
+      <div class="mkt-metrics">
+        <div class="metric"><span class="metric-label"><i class="fas fa-arrow-up text-green"></i> High</span><span class="metric-value" id="high-{{ symbol.symbol }}">--</span></div>
+        <div class="metric"><span class="metric-label"><i class="fas fa-arrow-down text-red"></i> Low</span><span class="metric-value" id="low-{{ symbol.symbol }}">--</span></div>
+        <div class="metric"><span class="metric-label"><i class="fas fa-hand-holding-usd text-blue"></i> Bid</span><span class="metric-value" id="bid-{{ symbol.symbol }}">--</span></div>
+        <div class="metric"><span class="metric-label"><i class="fas fa-money-bill-wave text-warning"></i> Ask</span><span class="metric-value" id="ask-{{ symbol.symbol }}">--</span></div>
+        <div class="metric"><span class="metric-label"><i class="fas fa-sliders-h text-info"></i> Spread</span><span class="metric-value" id="spread-pips-{{ symbol.symbol }}">--</span></div>
+        <div class="metric"><span class="metric-label"><i class="fas fa-bolt text-secondary"></i> RSI</span><span class="metric-value" id="rsi-{{ symbol.symbol }}">--</span></div>
+        <div class="metric"><span class="metric-label"><i class="fas fa-wave-square text-purple"></i> MACD</span><span class="metric-value" id="macd-{{ symbol.symbol }}">--</span></div>
+        <div class="metric"><span class="metric-label"><i class="fas fa-chart-area"></i> Volatility</span><span class="metric-value" id="volatility-{{ symbol.symbol }}">--</span></div>
+      </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 320px;gap:20px;margin-top:20px;">
+    <div>
+      <div class="market-filter-group">
+        <h3 style="font-size:1rem;font-weight:600;margin-bottom:12px;">Order Panel</h3>
+        {% include '_order_form.html' %}
+        <div style="margin-top:16px;border-top:1px solid var(--border-color);padding-top:12px;">
+          <h4 style="font-size:0.85rem;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">Recent Orders</h4>
+          {% include '_orders_list.html' %}
+        </div>
+      </div>
+
+      {% for symbol in subscribed_symbols %}
+      <div class="graph-card" data-symbol="{{ symbol.symbol }}">
+        <div class="graph-title"><i class="fas fa-chart-line text-blue" style="margin-right:6px;"></i>{{ symbol.symbol }} — Real-Time Price</div>
+        <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Source: <span id="currentDataSource-{{ symbol.symbol }}">Loading...</span></div>
+        <canvas id="chart-{{ symbol.symbol }}"></canvas>
+        <div id="noDataMsg-{{ symbol.symbol }}" style="display:none;color:var(--accent-red);text-align:center;margin-top:6px;font-size:0.8rem;">No real-time data available.</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;">
+          <div class="indicator-card"><small>RSI</small><span id="chart-rsi-{{ symbol.symbol }}">--</span></div>
+          <div class="indicator-card"><small>MACD</small><span id="chart-macd-{{ symbol.symbol }}">--</span></div>
+          <div class="indicator-card"><small>Volatility</small><span id="chart-volatility-{{ symbol.symbol }}">--</span></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div>
+      <div class="market-filter-group" style="position:sticky;top:20px;">
+        <h3 style="font-size:1rem;font-weight:600;margin-bottom:12px;">Trading Signals</h3>
+        <div id="signals-container">
+          {% for symbol, signal in signals.items() %}
+          <div class="signal-card-custom">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <strong style="color:var(--text-primary);font-size:0.9rem;">{{ symbol }}</strong>
+              <span class="badge badge-blue">{{ signal.type }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:0.8rem;color:var(--text-secondary);">
+              <span>Confidence: <strong style="color:var(--accent-green);">{{ signal.confidence }}%</strong></span>
+              <span>{{ signal.timestamp }}</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filterCheckboxes = document.querySelectorAll('.filter-checkbox');
+    const marketTypeCheckboxes = document.querySelectorAll('.market-type-checkbox');
+    const displayCheckboxes = document.querySelectorAll('.display-checkbox');
+    const filteredDataContainer = document.getElementById('filtered-data-container');
+
+    function updateFilteredData() {
+        const selectedCurrencies = Array.from(filterCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
+        const selectedMarketTypes = Array.from(marketTypeCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
+        const selectedDisplayOptions = Array.from(displayCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
+        if (selectedCurrencies.length === 0 || selectedMarketTypes.length === 0 || selectedDisplayOptions.length === 0) {
+            filteredDataContainer.innerHTML = '<div style="color:var(--accent-warning);text-align:center;font-size:0.85rem;">Select at least one option from each filter</div>';
+            return;
+        }
+        const items = selectedCurrencies.map(function(sym) {
+            const priceEl = document.getElementById('price-' + sym);
+            const changeEl = document.getElementById('change-pct-' + sym);
+            const price = priceEl ? priceEl.textContent : 'N/A';
+            const change = changeEl ? changeEl.textContent : '0%';
+            const isPos = !change.includes('-');
+            return '<div class="filtered-data-item"><strong>' + sym + '</strong><span>' + price + '</span><span style="color:' + (isPos ? 'var(--accent-green)' : 'var(--accent-red)') + '">' + change + '</span></div>';
+        }).join('');
+        filteredDataContainer.innerHTML = items || '<div style="color:var(--text-muted);text-align:center;">No data for selected filters</div>';
+
+        document.querySelectorAll('.mkt-price-area,.chart-indicators,.graph-card').forEach(function(el) { el.style.display = 'block'; });
+        if (!selectedDisplayOptions.includes('price')) document.querySelectorAll('.mkt-price-area').forEach(function(el) { el.style.display = 'none'; });
+        if (!selectedDisplayOptions.includes('indicators')) document.querySelectorAll('.indicator-card').forEach(function(el) { el.style.display = 'none'; });
+        if (!selectedDisplayOptions.includes('charts')) document.querySelectorAll('.graph-card').forEach(function(el) { el.style.display = 'none'; });
+    }
+
+    filterCheckboxes.forEach(function(cb) { cb.addEventListener('change', updateFilteredData); });
+    marketTypeCheckboxes.forEach(function(cb) { cb.addEventListener('change', updateFilteredData); });
+    displayCheckboxes.forEach(function(cb) { cb.addEventListener('change', updateFilteredData); });
+
+    const socket = io();
+    var charts = {};
+
+    socket.on('connect', function() {
+        document.querySelectorAll('[id^="chart-"]').forEach(function(c) {
+            socket.emit('subscribe', { symbol: c.id.replace('chart-', '') });
+        });
+    });
+
+    socket.on('price_update', function(data) {
+        var p = document.getElementById('price-' + data.symbol);
+        var c = document.getElementById('change-' + data.symbol);
+        var cp = document.getElementById('change-pct-' + data.symbol);
+        if (p) {
+            var prev = parseFloat(p.getAttribute('data-prev') || '0');
+            var curr = parseFloat(data.price);
+            p.textContent = data.price;
+            p.setAttribute('data-prev', curr);
+            if (c && prev && curr) {
+                var pct = ((curr - prev) / prev) * 100;
+                var cls = pct >= 0 ? 'pos' : 'neg';
+                c.textContent = pct.toFixed(2) + '%';
+                c.className = 'mkt-badge ' + cls;
+                if (cp) { cp.textContent = pct.toFixed(2) + '%'; cp.style.color = pct >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'; }
+            }
+            updateFilteredData();
+        }
+        updateChart(data);
+    });
+
+    function updateChart(data) {
+        var sym = data.symbol;
+        var canvas = document.getElementById('chart-' + sym);
+        if (!canvas) return;
+        if (!charts[sym]) {
+            charts[sym] = new Chart(canvas.getContext('2d'), {
+                type: 'line',
+                data: { labels: [], datasets: [{ label: 'Price', data: [], borderColor: '#00C2FF', backgroundColor: 'rgba(0,194,255,0.08)', borderWidth: 2, fill: true, tension: 0.4 }] },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94A3B8', maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } },
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94A3B8' } }
+                    },
+                    animation: { duration: 0 }
+                }
+            });
+        }
+        var chart = charts[sym];
+        var label = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        if (chart.data.labels.length > 30) { chart.data.labels.shift(); chart.data.datasets[0].data.shift(); }
+        chart.data.labels.push(label);
+        chart.data.datasets[0].data.push(data.price);
+        chart.update('none');
+        ['rsi','macd','volatility'].forEach(function(k) {
+            var el = document.getElementById('chart-' + k + '-' + sym);
+            if (el) el.textContent = data[k] !== undefined ? (typeof data[k] === 'number' ? (k === 'volatility' ? data[k].toFixed(2) + '%' : data[k].toFixed(2)) : data[k]) : '--';
+        });
+        var ds = document.getElementById('currentDataSource-' + sym);
+        if (ds) ds.textContent = data.source || 'Unknown';
+        var nd = document.getElementById('noDataMsg-' + sym);
+        if (nd) nd.style.display = chart.data.datasets[0].data.length < 2 ? 'block' : 'none';
+    }
+
+});
+</script>
+{% endblock %}

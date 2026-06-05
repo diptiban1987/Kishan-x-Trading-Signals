@@ -1,0 +1,536 @@
+{% extends "base.html" %}
+
+{% block title %}{{ platform_name }} — Premium Trading Plans{% endblock %}
+
+{% block content %}
+<div class="main">
+    <div class="topbar">
+        <div class="welcome">Choose Your Trading Edge</div>
+    </div>
+
+    <div class="subscription-container">
+        <!-- Hero Section -->
+        <div class="sub-hero">
+            <h1 class="hero-title">Unlock AI-Powered <span class="gradient-text">Trading Signals</span></h1>
+            <p class="hero-subtitle">Join 2,500+ traders using our XGBoost AI engine with <strong>72%+ accuracy</strong> to trade smarter on Indian markets.</p>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <span class="stat-value" id="stat-accuracy">72%</span>
+                <span class="stat-label">AI Accuracy</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value">21</span>
+                <span class="stat-label">Features Analyzed</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value">6</span>
+                <span class="stat-label">Market Regimes</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value">24/7</span>
+                <span class="stat-label">Signal Generation</span>
+            </div>
+        </div>
+
+        <!-- Billing Toggle -->
+        <div class="billing-toggle">
+            <span class="toggle-label" id="monthly-label">Monthly</span>
+            <label class="switch">
+                <input type="checkbox" id="billing-toggle" onchange="toggleBilling()">
+                <span class="slider"></span>
+            </label>
+            <span class="toggle-label" id="yearly-label">Yearly <span class="save-badge">Save 20%</span></span>
+        </div>
+
+        <!-- Pricing Cards -->
+        <div class="subscription-grid">
+            <!-- Free Plan -->
+            <div class="plan-card" id="plan-free">
+                <div class="plan-icon">🆓</div>
+                <h3>Free</h3>
+                <div class="price" id="price-free">₹0<span>/month</span></div>
+                <p class="plan-desc">Get started with basic signals</p>
+                <ul class="features">
+                    <li><i class="fas fa-check"></i> 5 signals per day</li>
+                    <li><i class="fas fa-check"></i> Basic technical indicators</li>
+                    <li><i class="fas fa-check"></i> Portfolio tracking</li>
+                    <li><i class="fas fa-check"></i> Email support</li>
+                    <li class="disabled"><i class="fas fa-times"></i> AI-powered signals</li>
+                    <li class="disabled"><i class="fas fa-times"></i> Auto-trading</li>
+                    <li class="disabled"><i class="fas fa-times"></i> Real-time data</li>
+                    <li class="disabled"><i class="fas fa-times"></i> Market regime detection</li>
+                </ul>
+                <button class="btn btn-outline" id="btn-free" disabled>Current Plan</button>
+            </div>
+
+            <!-- Premium Plan -->
+            <div class="plan-card premium" id="plan-premium">
+                <div class="ribbon">MOST POPULAR</div>
+                <div class="plan-icon">⚡</div>
+                <h3>Premium</h3>
+                <div class="price monthly-price" id="price-premium">₹3,999<span>/month</span></div>
+                <div class="price yearly-price" style="display:none;" id="yprice-premium">₹38,399<span>/year</span></div>
+                <p class="plan-desc">AI signals for serious traders</p>
+                <ul class="features">
+                    <li><i class="fas fa-check"></i> <strong>Unlimited AI signals</strong></li>
+                    <li><i class="fas fa-check"></i> XGBoost ML predictions</li>
+                    <li><i class="fas fa-check"></i> Market regime detection</li>
+                    <li><i class="fas fa-check"></i> Auto-trading (1 strategy)</li>
+                    <li><i class="fas fa-check"></i> Real-time data feeds</li>
+                    <li><i class="fas fa-check"></i> Advanced analytics</li>
+                    <li><i class="fas fa-check"></i> Priority support</li>
+                    <li class="disabled"><i class="fas fa-times"></i> API access</li>
+                </ul>
+                <button class="btn btn-premium" id="btn-premium" onclick="startCheckout('premium')">
+                    Start 7-Day Free Trial
+                </button>
+                <p class="trial-note">No charge for 7 days. Cancel anytime.</p>
+            </div>
+
+            <!-- Pro Plan -->
+            <div class="plan-card pro" id="plan-pro">
+                <div class="plan-icon">🚀</div>
+                <h3>Pro</h3>
+                <div class="price monthly-price" id="price-pro">₹7,999<span>/month</span></div>
+                <div class="price yearly-price" style="display:none;" id="yprice-pro">₹76,799<span>/year</span></div>
+                <p class="plan-desc">For professional traders & teams</p>
+                <ul class="features">
+                    <li><i class="fas fa-check"></i> Everything in Premium</li>
+                    <li><i class="fas fa-check"></i> <strong>Custom model training</strong></li>
+                    <li><i class="fas fa-check"></i> Multiple auto-trade strategies</li>
+                    <li><i class="fas fa-check"></i> Full API access</li>
+                    <li><i class="fas fa-check"></i> Custom strategies builder</li>
+                    <li><i class="fas fa-check"></i> Up to 5 team members</li>
+                    <li><i class="fas fa-check"></i> 24/7 dedicated support</li>
+                    <li><i class="fas fa-check"></i> White-label option</li>
+                </ul>
+                <button class="btn btn-pro" id="btn-pro" onclick="startCheckout('pro')">
+                    Upgrade to Pro
+                </button>
+            </div>
+
+            <!-- Enterprise Plan -->
+            <div class="plan-card enterprise" id="plan-enterprise">
+                <div class="plan-icon">👑</div>
+                <h3>Enterprise</h3>
+                <div class="price" id="price-enterprise">Custom</div>
+                <p class="plan-desc">For large institutions & hedge funds</p>
+                <ul class="features">
+                    <li><i class="fas fa-check"></i> Everything in Pro</li>
+                    <li><i class="fas fa-check"></i> <strong>Custom white-label solutions</strong></li>
+                    <li><i class="fas fa-check"></i> Unlimited team members</li>
+                    <li><i class="fas fa-check"></i> Dedicated institutional servers</li>
+                    <li><i class="fas fa-check"></i> SLA uptime guarantee (99.99%)</li>
+                    <li><i class="fas fa-check"></i> Direct developer API access</li>
+                    <li><i class="fas fa-check"></i> 24/7 dedicated support team</li>
+                </ul>
+                <button class="btn btn-enterprise" id="btn-enterprise" onclick="contactSales()">
+                    Contact Sales
+                </button>
+            </div>
+        </div>
+
+        <!-- Current Subscription Panel -->
+        <div class="current-subscription" id="current-subscription" style="display:none;">
+            <h3>📋 Your Subscription</h3>
+            <div class="subscription-details" id="subscription-details"></div>
+            <button class="btn btn-danger" id="btn-cancel" onclick="cancelSubscription()" style="display:none;">
+                Cancel Subscription
+            </button>
+        </div>
+
+        <!-- AI Performance Showcase -->
+        <div class="ai-showcase">
+            <h2>🤖 AI Signal Engine — Under the Hood</h2>
+            <div class="showcase-grid">
+                <div class="showcase-card">
+                    <div class="showcase-icon">📊</div>
+                    <h4>21 Technical Features</h4>
+                    <p>RSI, MACD, Bollinger Bands, Stochastic, OBV, ADX proxy, volume ratios, momentum indicators and more — all analyzed simultaneously.</p>
+                </div>
+                <div class="showcase-card">
+                    <div class="showcase-icon">🧠</div>
+                    <h4>XGBoost ML Engine</h4>
+                    <p>Gradient-boosted decision trees trained on 2+ years of historical data across NIFTY, BANKNIFTY, and top Indian stocks.</p>
+                </div>
+                <div class="showcase-card">
+                    <div class="showcase-icon">🎯</div>
+                    <h4>Market Regime Detection</h4>
+                    <p>Automatically detects trending, ranging, and volatile market conditions to adjust signal confidence accordingly.</p>
+                </div>
+                <div class="showcase-card">
+                    <div class="showcase-icon">⚡</div>
+                    <h4>Real-Time Predictions</h4>
+                    <p>Generate BUY/SELL/HOLD signals with confidence scores for any Indian stock symbol in under 2 seconds.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Social Proof -->
+        <div class="social-proof">
+            <h2>What Our Traders Say</h2>
+            <div class="testimonials">
+                <div class="testimonial">
+                    <p>"The AI signals helped me identify entries I would have missed. My win rate improved from 52% to 68% in just 2 months."</p>
+                    <div class="testimonial-author">— Rajesh K., Mumbai</div>
+                </div>
+                <div class="testimonial">
+                    <p>"The market regime detection is a game changer. I stopped trading during volatile periods and my drawdowns reduced significantly."</p>
+                    <div class="testimonial-author">— Priya S., Bangalore</div>
+                </div>
+                <div class="testimonial">
+                    <p>"Worth every rupee. The auto-trading feature alone saved me hours of screen time daily."</p>
+                    <div class="testimonial-author">— Amit T., Delhi</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAQ -->
+        <div class="faq-section">
+            <h2>Frequently Asked Questions</h2>
+            <div class="faq-item" onclick="this.classList.toggle('open')">
+                <div class="faq-q"><i class="fas fa-chevron-right"></i> How accurate are the AI signals?</div>
+                <div class="faq-a">Our XGBoost model achieves 70-75% accuracy on validation data, trained on 2+ years of historical Indian market data. Signal confidence scores help you filter for the highest-probability trades.</div>
+            </div>
+            <div class="faq-item" onclick="this.classList.toggle('open')">
+                <div class="faq-q"><i class="fas fa-chevron-right"></i> Can I cancel anytime?</div>
+                <div class="faq-a">Yes! You can cancel your subscription at any time. You'll retain access until the end of your billing period. No questions asked.</div>
+            </div>
+            <div class="faq-item" onclick="this.classList.toggle('open')">
+                <div class="faq-q"><i class="fas fa-chevron-right"></i> What payment methods are accepted?</div>
+                <div class="faq-a">We accept UPI, credit/debit cards, net banking, and wallets via Razorpay for Indian users. International users can pay via Stripe.</div>
+            </div>
+            <div class="faq-item" onclick="this.classList.toggle('open')">
+                <div class="faq-q"><i class="fas fa-chevron-right"></i> Is the 7-day trial really free?</div>
+                <div class="faq-a">Absolutely. No card required for the trial. Experience the full power of AI signals before committing.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .subscription-container { padding: 1.5rem; max-width: 1300px; margin: 0 auto; }
+
+    /* Hero */
+    .sub-hero { text-align: center; margin-bottom: 2rem; }
+    .hero-title { font-size: 2.2rem; color: #fff; font-weight: 700; margin-bottom: 0.5rem; }
+    .gradient-text { background: linear-gradient(135deg, #00e6d0, #00b4d8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .hero-subtitle { color: #b0bec5; font-size: 1.1rem; max-width: 600px; margin: 0 auto; }
+
+    /* Stats */
+    .stats-bar { display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem; flex-wrap: wrap; }
+    .stat-item { text-align: center; }
+    .stat-value { display: block; font-size: 1.8rem; font-weight: 700; color: #00e6d0; }
+    .stat-label { font-size: 0.8rem; color: #78909c; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* Billing toggle */
+    .billing-toggle { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 2rem; }
+    .toggle-label { color: #fff; font-size: 1rem; }
+    .save-badge { background: #00e6d0; color: #000; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: bold; }
+    .switch { position: relative; display: inline-block; width: 54px; height: 28px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; inset: 0; background: #37474f; transition: .3s; border-radius: 28px; }
+    .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background: #fff; transition: .3s; border-radius: 50%; }
+    input:checked+.slider { background: #00e6d0; }
+    input:checked+.slider:before { transform: translateX(26px); }
+
+    /* Plan cards */
+    .subscription-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 3rem; }
+    .plan-card { background: rgba(255,255,255,0.04); border-radius: 16px; padding: 2rem; text-align: center; position: relative; border: 1px solid rgba(255,255,255,0.08); transition: all 0.3s ease; }
+    .plan-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.3); }
+    .plan-card.premium { background: linear-gradient(135deg, rgba(0,230,208,0.08), rgba(0,180,216,0.06)); border-color: rgba(0,230,208,0.3); }
+    .plan-card.pro { background: linear-gradient(135deg, rgba(255,193,7,0.08), rgba(255,152,0,0.06)); border-color: rgba(255,193,7,0.2); }
+    .plan-card.enterprise { background: linear-gradient(135deg, rgba(156,39,176,0.08), rgba(103,58,183,0.06)); border-color: rgba(156,39,176,0.25); }
+    .plan-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    .plan-card h3 { color: #fff; font-size: 1.4rem; margin-bottom: 0.5rem; }
+    .plan-desc { color: #90a4ae; font-size: 0.9rem; margin-bottom: 1rem; }
+    .ribbon { position: absolute; top: 16px; right: -4px; padding: 4px 14px; background: linear-gradient(135deg, #00e6d0, #00b4d8); color: #000; font-size: 0.75rem; font-weight: bold; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,230,208,0.3); }
+    .price { font-size: 2.2rem; font-weight: bold; color: #00e6d0; margin: 1rem 0 0.5rem; }
+    .price span { font-size: 0.9rem; color: #78909c; }
+    .plan-card.pro .price { color: #ffc107; }
+    .plan-card.enterprise .price { color: #e040fb; }
+    .trial-note { color: #78909c; font-size: 0.8rem; margin-top: 0.5rem; }
+
+    @keyframes pulseGlow {
+        0% { box-shadow: 0 0 15px rgba(0, 230, 208, 0.4); transform: translateY(-4px) scale(1); }
+        50% { box-shadow: 0 0 30px rgba(0, 230, 208, 0.8); transform: translateY(-8px) scale(1.02); }
+        100% { box-shadow: 0 0 15px rgba(0, 230, 208, 0.4); transform: translateY(-4px) scale(1); }
+    }
+
+    .plan-card.current-plan {
+        border: 2px solid #00e6d0;
+        animation: pulseGlow 3s infinite;
+        z-index: 2;
+        opacity: 1 !important;
+    }
+    .plan-card.current-plan::before {
+        content: 'CURRENT PLAN';
+        position: absolute;
+        top: -12px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #00e6d0;
+        color: #000;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: bold;
+        z-index: 10;
+        letter-spacing: 0.5px;
+        box-shadow: 0 2px 8px rgba(0,230,208,0.5);
+    }
+
+    /* Dim non-active plans when a plan is active */
+    .subscription-grid.has-active-plan .plan-card:not(.current-plan) {
+        opacity: 0.4;
+        filter: grayscale(0.6);
+        transform: scale(0.95);
+        z-index: 1;
+    }
+
+    /* Bring back to full opacity simultaneously on hover over the grid */
+    .subscription-grid.has-active-plan:hover .plan-card:not(.current-plan) {
+        opacity: 1;
+        filter: grayscale(0);
+        transform: translateY(-2px) scale(0.98);
+    }
+    .subscription-grid.has-active-plan:hover .plan-card:not(.current-plan):hover {
+        transform: translateY(-6px) scale(1.02);
+        box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+        z-index: 3;
+    }
+    
+    /* Features list */
+    .features { list-style: none; padding: 0; margin: 1.5rem 0; text-align: left; }
+    .features li { margin: 0.6rem 0; color: #cfd8dc; font-size: 0.9rem; display: flex; align-items: center; }
+    .features li.disabled { color: #546e7a; }
+    .features i { margin-right: 10px; width: 16px; text-align: center; flex-shrink: 0; }
+    .fa-check { color: #00e6d0; }
+    .fa-times { color: #ef5350; }
+
+    /* Buttons */
+    .btn { width: 100%; padding: 0.9rem; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-size: 1rem; }
+    .btn:hover:not([disabled]) { transform: translateY(-2px); }
+    .btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+    .btn-outline { background: transparent; color: #78909c; border: 1px solid #37474f; }
+    .btn-premium { background: linear-gradient(135deg, #00e6d0, #00b4d8); color: #000; box-shadow: 0 4px 15px rgba(0,230,208,0.3); }
+    .btn-premium:hover { box-shadow: 0 6px 20px rgba(0,230,208,0.5); }
+    .btn-pro { background: linear-gradient(135deg, #ffc107, #ff9800); color: #000; box-shadow: 0 4px 15px rgba(255,193,7,0.3); }
+    .btn-enterprise { background: linear-gradient(135deg, #9c27b0, #673ab7); color: #fff; box-shadow: 0 4px 15px rgba(156,39,176,0.3); }
+    .btn-enterprise:hover { box-shadow: 0 6px 20px rgba(156,39,176,0.5); }
+    .btn-danger { background: #ef5350; color: #fff; margin-top: 1rem; width: auto; padding: 0.6rem 1.5rem; }
+
+    /* Current sub */
+    .current-subscription { max-width: 600px; margin: 2rem auto; padding: 1.5rem; background: rgba(255,255,255,0.04); border-radius: 12px; text-align: center; }
+    .current-subscription h3 { color: #fff; margin-bottom: 1rem; }
+    .subscription-details { color: #b0bec5; line-height: 2; }
+    .subscription-details strong { color: #00e6d0; }
+
+    /* AI Showcase */
+    .ai-showcase { margin: 3rem 0; text-align: center; }
+    .ai-showcase h2 { color: #fff; font-size: 1.6rem; margin-bottom: 1.5rem; }
+    .showcase-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.2rem; }
+    .showcase-card { background: rgba(255,255,255,0.04); border-radius: 12px; padding: 1.5rem; text-align: left; border: 1px solid rgba(255,255,255,0.06); transition: border-color 0.3s; }
+    .showcase-card:hover { border-color: rgba(0,230,208,0.3); }
+    .showcase-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+    .showcase-card h4 { color: #fff; margin-bottom: 0.5rem; }
+    .showcase-card p { color: #90a4ae; font-size: 0.85rem; line-height: 1.5; }
+
+    /* Social Proof */
+    .social-proof { margin: 3rem 0; text-align: center; }
+    .social-proof h2 { color: #fff; font-size: 1.6rem; margin-bottom: 1.5rem; }
+    .testimonials { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.2rem; }
+    .testimonial { background: rgba(255,255,255,0.04); border-radius: 12px; padding: 1.5rem; text-align: left; border-left: 3px solid #00e6d0; }
+    .testimonial p { color: #cfd8dc; font-style: italic; font-size: 0.9rem; line-height: 1.6; }
+    .testimonial-author { color: #00e6d0; font-size: 0.85rem; margin-top: 0.8rem; font-weight: 600; }
+
+    /* FAQ */
+    .faq-section { margin: 3rem 0; max-width: 700px; margin-left: auto; margin-right: auto; }
+    .faq-section h2 { color: #fff; text-align: center; font-size: 1.6rem; margin-bottom: 1.5rem; }
+    .faq-item { background: rgba(255,255,255,0.04); border-radius: 10px; margin-bottom: 0.8rem; overflow: hidden; cursor: pointer; border: 1px solid rgba(255,255,255,0.06); }
+    .faq-q { padding: 1rem 1.2rem; color: #fff; font-weight: 500; display: flex; align-items: center; gap: 0.8rem; }
+    .faq-q i { color: #00e6d0; transition: transform 0.3s; font-size: 0.75rem; }
+    .faq-item.open .faq-q i { transform: rotate(90deg); }
+    .faq-a { max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding 0.3s ease; padding: 0 1.2rem; color: #90a4ae; font-size: 0.9rem; line-height: 1.6; }
+    .faq-item.open .faq-a { max-height: 200px; padding: 0 1.2rem 1rem; }
+
+    @media (max-width: 768px) {
+        .subscription-grid { grid-template-columns: 1fr; }
+        .hero-title { font-size: 1.6rem; }
+        .stats-bar { gap: 1rem; }
+        .stat-value { font-size: 1.4rem; }
+    }
+</style>
+
+<script>
+    let currentPlan = 'free';
+    let isYearly = false;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        fetchCurrentSubscription();
+        fetchModelPerformance();
+    });
+
+    function toggleBilling() {
+        isYearly = document.getElementById('billing-toggle').checked;
+        document.querySelectorAll('.monthly-price').forEach(el => el.style.display = isYearly ? 'none' : 'block');
+        document.querySelectorAll('.yearly-price').forEach(el => el.style.display = isYearly ? 'block' : 'none');
+    }
+
+    function fetchCurrentSubscription() {
+        fetch('/api/subscriptions/current')
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    currentPlan = data.subscription.plan_type;
+                    updatePlanUI(currentPlan, data.subscription);
+                }
+            }).catch(e => console.error('Subscription fetch error:', e));
+    }
+
+    function fetchModelPerformance() {
+        fetch('/api/ai-signals/model-info')
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'success' && data.model && data.model.accuracy) {
+                    const acc = (data.model.accuracy * 100).toFixed(0);
+                    document.getElementById('stat-accuracy').textContent = acc + '%';
+                }
+            }).catch(() => {});
+    }
+
+    function updatePlanUI(planType, subData) {
+        document.querySelector('.subscription-grid').classList.add('has-active-plan');
+        document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('current-plan'));
+        document.querySelectorAll('.plan-card .btn').forEach(b => {
+            b.disabled = false;
+            if (b.id === 'btn-free') { b.textContent = 'Current Plan'; b.disabled = true; }
+        });
+
+        const card = document.getElementById('plan-' + planType);
+        if (card) card.classList.add('current-plan');
+        const btn = document.getElementById('btn-' + planType);
+        if (btn) { btn.disabled = true; btn.textContent = '✓ Current Plan'; }
+
+        if (planType !== 'free') {
+            document.getElementById('current-subscription').style.display = 'block';
+            document.getElementById('subscription-details').innerHTML = `
+                <p><strong>Plan:</strong> ${planType.charAt(0).toUpperCase() + planType.slice(1)}</p>
+                <p><strong>Status:</strong> ${subData.status}</p>
+                <p><strong>Period:</strong> ${fmtDate(subData.current_period_start)} — ${fmtDate(subData.current_period_end)}</p>
+                ${subData.trial_end ? '<p><strong>Trial Ends:</strong> ' + fmtDate(subData.trial_end) + '</p>' : ''}
+            `;
+            document.getElementById('btn-cancel').style.display = 'inline-block';
+        }
+    }
+
+    function startCheckout(planType) {
+        const cycle = isYearly ? 'yearly' : 'monthly';
+
+        // Try Razorpay first (Indian market)
+        fetch('/api/subscriptions/razorpay/create-order', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({plan_type: planType, billing_cycle: cycle})
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success' && data.order_id) {
+                openRazorpayCheckout(data, planType);
+            } else if (data.status === 'demo_mode') {
+                alert('✅ Demo subscription activated for ' + planType.toUpperCase() + ' plan!\nRefresh to see changes.');
+                location.reload();
+            } else {
+                // Fallback to Stripe
+                fallbackStripe(planType, cycle);
+            }
+        })
+        .catch(() => fallbackStripe(planType, cycle));
+    }
+
+    function openRazorpayCheckout(orderData, planType) {
+        if (typeof Razorpay === 'undefined') {
+            alert('Razorpay SDK not loaded. Please refresh the page.');
+            return;
+        }
+        const options = {
+            key: orderData.key_id,
+            amount: orderData.amount,
+            currency: orderData.currency,
+            name: '{{ platform_name }}',
+            description: orderData.plan_name,
+            order_id: orderData.order_id,
+            handler: function (response) {
+                // Verify payment
+                fetch('/api/subscriptions/razorpay/verify', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        razorpay_order_id: response.razorpay_order_id,
+                        razorpay_payment_id: response.razorpay_payment_id,
+                        razorpay_signature: response.razorpay_signature,
+                        plan_type: planType,
+                        amount: orderData.amount
+                    })
+                })
+                .then(r => r.json())
+                .then(result => {
+                    if (result.status === 'success') {
+                        alert('🎉 ' + result.message);
+                        location.reload();
+                    } else {
+                        alert('Payment verification failed. Please contact support.');
+                    }
+                });
+            },
+            theme: {color: '#00e6d0'}
+        };
+        new Razorpay(options).open();
+    }
+
+    function fallbackStripe(planType, cycle) {
+        fetch('/api/subscriptions/create-checkout', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({plan_type: planType, billing_cycle: cycle})
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.url) { window.location.href = data.url; }
+            else if (data.status === 'demo_mode') {
+                alert('✅ Demo subscription activated for ' + planType.toUpperCase() + '!');
+                location.reload();
+            }
+            else { alert('Error: ' + (data.error || 'Unknown error')); }
+        })
+        .catch(e => alert('Checkout error: ' + e.message));
+    }
+
+    function cancelSubscription() {
+        if (!confirm('Are you sure? You\'ll keep access until the end of your billing period.')) return;
+        fetch('/api/subscriptions/cancel', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({reason: 'User requested cancellation'})
+        })
+        .then(r => r.json())
+        .then(data => { alert(data.message || 'Cancelled'); location.reload(); })
+        .catch(e => alert('Error: ' + e.message));
+    }
+
+    function fmtDate(d) {
+        if (!d) return 'N/A';
+        return new Date(d).toLocaleDateString('en-IN', {year:'numeric', month:'short', day:'numeric'});
+    }
+
+    function contactSales() {
+        alert("👑 Institutional & Enterprise Plans:\nPlease contact our institutional desk at enterprise@kishanxtrading.com for onboarding, dedicated servers setup, and API integrations.\n\nOur representatives will contact you within 2 hours!");
+    }
+</script>
+
+<!-- Razorpay SDK -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+{% endblock %}

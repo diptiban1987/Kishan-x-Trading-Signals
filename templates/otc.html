@@ -1,0 +1,444 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+    .otc-container {
+        padding: 1rem;
+    }
+    .market-header {
+        margin-bottom: 1.5rem;
+    }
+    .market-header h1 {
+        font-size: 1.8rem;
+        margin-bottom: 0.5rem;
+    }
+    .market-header p {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+    }
+    .market-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    .market-card {
+        background: var(--bg-card);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        border: 1px solid var(--border-color);
+    }
+    .market-card h2 {
+        font-size: 1.3rem;
+        margin-bottom: 1rem;
+    }
+    .price-info {
+        display: grid;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    .price-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 5px;
+    }
+    .price-label {
+        color: var(--text-muted);
+    }
+    .price-value {
+        font-weight: 600;
+    }
+    .chart-section {
+        background: var(--bg-card);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid var(--border-color);
+    }
+    .chart-section h2 {
+        font-size: 1.3rem;
+        margin-bottom: 1rem;
+    }
+    .chart-container {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        padding: 1rem;
+        height: 300px;
+    }
+    .signals-section {
+        background: var(--bg-card);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        border: 1px solid var(--border-color);
+    }
+    .signals-section h2 {
+        font-size: 1.3rem;
+        margin-bottom: 1rem;
+    }
+    .signals-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .signals-table th,
+    .signals-table td {
+        padding: 0.75rem;
+        text-align: left;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .signals-table th {
+        font-weight: 500;
+        color: var(--text-muted);
+    }
+    .signal-direction {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.875rem;
+    }
+    .signal-direction.buy {
+        background-color: rgba(0, 230, 118, 0.15);
+        color: var(--accent-green);
+    }
+    .signal-direction.sell {
+        background-color: rgba(255, 77, 79, 0.15);
+        color: var(--accent-red);
+    }
+    .signal-form {
+        margin-top: 1rem;
+    }
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+    .form-group label {
+        margin-bottom: 0.5rem;
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+    .form-group select,
+    .form-group input {
+        padding: 0.75rem;
+        border: 1px solid var(--border-color);
+        border-radius: 5px;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        transition: border-color var(--transition-fast);
+    }
+    .form-group select:focus,
+    .form-group input:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 2px rgba(0, 194, 255, 0.2);
+    }
+    .generate-btn {
+        background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
+        color: #fff;
+        border: none;
+        padding: 1rem 2rem;
+        border-radius: 5px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .generate-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 194, 255, 0.3);
+    }
+
+    @media (min-width: 768px) {
+        .market-grid { grid-template-columns: repeat(2, 1fr); }
+        .otc-container { padding: 1.5rem; }
+        .market-header h1 { font-size: 2.2rem; }
+    }
+    @media (min-width: 992px) {
+        .market-grid { grid-template-columns: repeat(3, 1fr); }
+        .otc-container { padding: 2rem; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="otc-container">
+    <div class="market-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 1.5rem; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); padding: 16px 20px; border-radius: 12px;">
+        <div>
+            <h1 style="margin: 0; font-size: 1.6rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-coins" style="color: #ff9800;"></i> OTC Market
+            </h1>
+            <p style="margin: 4px 0 0 0; color: var(--text-muted); font-size: 0.9rem;">Real-time over-the-counter market data and trading signals</p>
+        </div>
+        <div class="flex-center gap-sm" style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: rgba(0,0,0,0.25); border-radius: 8px; border: 1px solid var(--border-color);">
+            <span class="text-muted" style="font-size: 0.8rem; color: #94A3B8;">Auto:</span>
+            <span id="otc-auto-trading-status" style="color: #ef5350; font-weight: 700; font-size: 0.8rem; text-transform: uppercase; margin-right: 6px;">Stopped</span>
+            <button id="start-otc-auto" onclick="startOtcAuto()" class="btn" style="width: auto; padding: 4px 10px; font-size: 0.75rem; background: linear-gradient(135deg, #00e6d0, #00b4d8); color: #000; border-radius: 6px; border: none; font-weight: bold; cursor: pointer;">▶️ Start</button>
+            <button id="stop-otc-auto" onclick="stopOtcAuto()" class="btn" style="display: none; width: auto; padding: 4px 10px; font-size: 0.75rem; background: #ef5350; color: #fff; border-radius: 6px; border: none; font-weight: bold; cursor: pointer;">⏹️ Stop</button>
+        </div>
+    </div>
+
+    <div class="market-grid">
+        <div class="market-card">
+            <h2>Selected Pair: {{ selected_pair|default('Select a pair') }}</h2>
+            <div class="price-info">
+                <div class="price-row">
+                    <span class="price-label">Current Price</span>
+                    <span class="price-value">{{ "%.5f"|format(current_rate) if current_rate and current_rate is not none else 'N/A' }}</span>
+                </div>
+                <div class="price-row">
+                    <span class="price-label">Data Source</span>
+                    <span class="price-value">{{ data_source if data_source else 'N/A' }}</span>
+                </div>
+                <div class="price-row">
+                    <span class="price-label">Broker Payout</span>
+                    <span class="price-value">{{ "%.1f"|format(payout * 100) if payout and payout is not none else 'N/A' }}%</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="market-card">
+            <h2>Option Pricing</h2>
+            <div class="price-info">
+                <div class="price-row">
+                    <span class="price-label">Call Price</span>
+                    <span class="price-value">{{ "%.6f"|format(call_price) if call_price and call_price is not none else 'N/A' }}</span>
+                </div>
+                <div class="price-row">
+                    <span class="price-label">Put Price</span>
+                    <span class="price-value">{{ "%.6f"|format(put_price) if put_price and put_price is not none else 'N/A' }}</span>
+                </div>
+                <div class="price-row">
+                    <span class="price-label">Volatility</span>
+                    <span class="price-value">{{ "%.1f"|format(volatility * 100) if volatility and volatility is not none else 'N/A' }}%</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="market-card">
+            <h2>Market Parameters</h2>
+            <div class="price-info">
+                <div class="price-row">
+                    <span class="price-label">Expiry</span>
+                    <span class="price-value">{{ "%.3f"|format(expiry * 365) if expiry and expiry is not none else 'N/A' }} days</span>
+                </div>
+                <div class="price-row">
+                    <span class="price-label">Risk-Free Rate</span>
+                    <span class="price-value">{{ "%.2f"|format(risk_free_rate * 100) if risk_free_rate and risk_free_rate is not none else 'N/A' }}%</span>
+                </div>
+                <div class="price-row">
+                    <span class="price-label">Selected Broker</span>
+                    <span class="price-value">{{ selected_broker if selected_broker else 'N/A' }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="signals-section" style="margin-bottom: 1.5rem;">
+        <h2>Generate OTC Signals</h2>
+        <form method="POST" class="signal-form">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="pair">Select Pair:</label>
+                    <select name="pair" id="pair" required>
+                        <option value="">Select Pair</option>
+                        {% if pairs %}
+                            {% for pair in pairs %}
+                            <option value="{{ pair }}" {% if pair == selected_pair %}selected{% endif %}>{{ pair }}</option>
+                            {% endfor %}
+                        {% endif %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="broker">Select Broker:</label>
+                    <select name="broker" id="broker" required>
+                        {% if brokers %}
+                            {% for broker in brokers %}
+                            <option value="{{ broker }}" {% if broker == selected_broker %}selected{% endif %}>{{ broker }}</option>
+                            {% endfor %}
+                        {% endif %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="signal_type">Signal Type:</label>
+                    <select name="signal_type" id="signal_type" required>
+                        <option value="CALL">CALL</option>
+                        <option value="PUT">PUT</option>
+                        <option value="BOTH">BOTH</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="start_hour">Start Hour:</label>
+                    <input type="number" name="start_hour" id="start_hour" min="0" max="23" value="9" required>
+                </div>
+                <div class="form-group">
+                    <label for="start_minute">Start Minute:</label>
+                    <input type="number" name="start_minute" id="start_minute" min="0" max="59" value="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="end_hour">End Hour:</label>
+                    <input type="number" name="end_hour" id="end_hour" min="0" max="23" value="17" required>
+                </div>
+                <div class="form-group">
+                    <label for="end_minute">End Minute:</label>
+                    <input type="number" name="end_minute" id="end_minute" min="0" max="59" value="0" required>
+                </div>
+            </div>
+            <button type="submit" class="generate-btn">Generate Signals</button>
+        </form>
+    </div>
+
+    <div class="chart-section">
+        <h2>Price Chart</h2>
+        <div class="chart-container">
+            <canvas id="priceChart"></canvas>
+        </div>
+    </div>
+
+    <div class="signals-section">
+        <h2>Recent Signals</h2>
+        <div class="table-responsive">
+            <table class="signals-table">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Pair</th>
+                        <th>Direction</th>
+                        <th>Entry</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if signals %}
+                        {% for signal in signals %}
+                        <tr>
+                            <td>{{ signal.time|default('N/A') }}</td>
+                            <td>{{ signal.pair|default('N/A') }}</td>
+                            <td>
+                                <span class="signal-direction {{ signal.direction|lower|default('') }}">
+                                    {{ signal.direction|default('N/A') }}
+                                </span>
+                            </td>
+                            <td>{{ signal.entry_price|default('N/A') }}</td>
+                            <td>{{ 'Pending' if signal.result is none else ('Won' if signal.result == 1 else 'Lost') }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center">No signals available</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // OTC Auto-Trading Functions
+    function checkOtcAutoStatus() {
+        fetch('/otc_status')
+            .then(r => r.json())
+            .then(data => {
+                updateOtcAutoUI(data.status === 'running');
+            }).catch(e => console.error('Error checking OTC auto status:', e));
+    }
+
+    function updateOtcAutoUI(isRunning) {
+        const startBtn = document.getElementById('start-otc-auto');
+        const stopBtn = document.getElementById('stop-otc-auto');
+        const statusSpan = document.getElementById('otc-auto-trading-status');
+        
+        if (isRunning) {
+            startBtn.style.display = 'none';
+            stopBtn.style.display = 'inline-block';
+            statusSpan.textContent = 'Running';
+            statusSpan.style.color = '#00e6d0';
+        } else {
+            startBtn.style.display = 'inline-block';
+            stopBtn.style.display = 'none';
+            statusSpan.textContent = 'Stopped';
+            statusSpan.style.color = '#ef5350';
+        }
+    }
+
+    function startOtcAuto() {
+        fetch('/start_otc_auto_trading')
+            .then(r => r.json())
+            .then(data => {
+                if (data.upgrade_required) {
+                    alert("⚡ Premium Plan Required:\nThis feature requires Premium plan or above. Please upgrade to unlock auto-trading!");
+                    window.location.href = "/subscription";
+                } else if (data.status === 'running') {
+                    updateOtcAutoUI(true);
+                    alert("✅ OTC Auto-Trading Started Successfully!");
+                } else {
+                    alert("❌ Failed to start auto-trading: " + (data.error || 'Unknown error'));
+                }
+            }).catch(e => console.error('Error starting OTC auto-trading:', e));
+    }
+
+    function stopOtcAuto() {
+        fetch('/stop_otc_auto_trading')
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'stopped') {
+                    updateOtcAutoUI(false);
+                    alert("⏹️ OTC Auto-Trading Stopped Successfully!");
+                } else {
+                    alert("❌ Failed to stop auto-trading: " + (data.error || 'Unknown error'));
+                }
+            }).catch(e => console.error('Error stopping OTC auto-trading:', e));
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        checkOtcAutoStatus();
+    });
+
+    const ctx = document.getElementById('priceChart').getContext('2d');
+    const sampleLabels = ['9:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
+    const sampleData = [1.2345, 1.2350, 1.2340, 1.2360, 1.2355, 1.2370, 1.2365, 1.2380, 1.2375];
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: sampleLabels,
+            datasets: [{
+                label: 'Price',
+                data: sampleData,
+                borderColor: '#00C2FF',
+                backgroundColor: 'rgba(0, 194, 255, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                    ticks: { color: '#94A3B8' }
+                },
+                x: {
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                    ticks: { color: '#94A3B8' }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

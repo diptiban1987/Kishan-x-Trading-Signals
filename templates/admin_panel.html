@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - {{ platform_name }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #fff;
+            min-height: 100vh;
+        }
+        
+        .admin-header {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            padding: 20px 0;
+        }
+        
+        .admin-card {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            margin-bottom: 25px;
+        }
+        
+        .admin-card .card-header {
+            background: linear-gradient(135deg, #00e6d0, #0099cc);
+            color: white;
+            border-radius: 15px 15px 0 0;
+            border: none;
+            padding: 15px 20px;
+        }
+        
+        .form-control, .form-select {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            background: rgba(0,0,0,0.4);
+            border-color: #00e6d0;
+            color: white;
+            box-shadow: 0 0 0 0.2rem rgba(0, 230, 208, 0.25);
+        }
+        
+        .form-control::placeholder {
+            color: rgba(255,255,255,0.6);
+        }
+        
+        .btn-admin {
+            background: linear-gradient(135deg, #00e6d0, #0099cc);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-admin:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 230, 208, 0.4);
+            color: white;
+        }
+        
+        .btn-danger-admin {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+        }
+        
+        .btn-success-admin {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        .status-online { background: #4CAF50; box-shadow: 0 0 8px #4CAF50; }
+        .status-offline { background: #ff6b6b; box-shadow: 0 0 8px #ff6b6b; }
+        .status-warning { background: #ffc107; box-shadow: 0 0 8px #ffc107; }
+        
+        .metric-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #00e6d0;
+        }
+        
+        .metric-label {
+            color: rgba(255,255,255,0.7);
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+        
+        .api-status {
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .api-active { background: rgba(76, 175, 80, 0.2); color: #4CAF50; border: 1px solid #4CAF50; }
+        .api-inactive { background: rgba(244, 67, 54, 0.2); color: #f44336; border: 1px solid #f44336; }
+        .api-pending { background: rgba(255, 193, 7, 0.2); color: #ffc107; border: 1px solid #ffc107; }
+        
+        .log-container {
+            background: rgba(0,0,0,0.4);
+            border-radius: 10px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .log-info { color: #00e6d0; }
+        .log-warning { color: #ffc107; }
+        .log-error { color: #ff6b6b; }
+        .log-success { color: #4CAF50; }
+    </style>
+</head>
+<body>
+    <div class="admin-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h1><i class="fas fa-cogs"></i> Admin Panel</h1>
+                    <p class="mb-0">Manage Trading System & Inject API Data</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <a href="/dashboard" class="btn btn-admin me-2">
+                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                    </a>
+                    <span class="api-status" id="system-status">System Status</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mt-4">
+        <!-- System Overview -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="metric-value" id="active-trades">0</div>
+                    <div class="metric-label">Active Trades</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="metric-value" id="total-pnl">₹0.00</div>
+                    <div class="metric-label">Total P&L</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="metric-value" id="win-rate">0%</div>
+                    <div class="metric-label">Win Rate</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="metric-value" id="api-status">DEMO</div>
+                    <div class="metric-label">Trading Mode</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- API Data Injection -->
+            <div class="col-md-6">
+                <div class="admin-card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-database"></i> API Data Injection</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="api-injection-form">
+                            <div class="mb-3">
+                                <label class="form-label">Data Source</label>
+                                <select class="form-select" id="data-source">
+                                    <option value="angel_one">Angel One API</option>
+                                    <option value="yfinance">Yahoo Finance</option>
+                                    <option value="alpha_vantage">Alpha Vantage</option>
+                                    <option value="custom">Custom API</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">API Endpoint</label>
+                                <input type="text" class="form-control" id="api-endpoint" 
+                                       placeholder="https://api.example.com/data">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">API Key</label>
+                                <input type="password" class="form-control" id="api-key" 
+                                       placeholder="Enter API key">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Update Frequency (seconds)</label>
+                                <input type="number" class="form-control" id="update-frequency" 
+                                       value="30" min="5" max="300">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Symbols to Monitor</label>
+                                <textarea class="form-control" id="symbols" rows="3" 
+                                          placeholder="NIFTY50,BANKNIFTY,RELIANCE,TCS (comma-separated)"></textarea>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-admin">
+                                <i class="fas fa-play"></i> Start Data Injection
+                            </button>
+                            <button type="button" class="btn btn-danger-admin ms-2" onclick="stopDataInjection()">
+                                <i class="fas fa-stop"></i> Stop
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trading Parameters -->
+            <div class="col-md-6">
+                <div class="admin-card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-sliders-h"></i> Trading Parameters</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="trading-params-form">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Max Concurrent Trades</label>
+                                        <input type="number" class="form-control" id="max-trades" 
+                                               value="5" min="1" max="20">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Risk Per Trade (%)</label>
+                                        <input type="number" class="form-control" id="risk-per-trade" 
+                                               value="2" min="0.1" max="10" step="0.1">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Stop Loss (%)</label>
+                                        <input type="number" class="form-control" id="stop-loss" 
+                                               value="3" min="0.5" max="20" step="0.5">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Take Profit (%)</label>
+                                        <input type="number" class="form-control" id="take-profit" 
+                                               value="6" min="1" max="50" step="0.5">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Trading Strategy</label>
+                                <select class="form-select" id="trading-strategy">
+                                    <option value="momentum">Momentum Trading</option>
+                                    <option value="mean_reversion">Mean Reversion</option>
+                                    <option value="breakout">Breakout Trading</option>
+                                    <option value="scalping">Scalping</option>
+                                    <option value="custom">Custom Strategy</option>
+                                </select>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-admin">
+                                <i class="fas fa-save"></i> Update Parameters
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- System Control -->
+            <div class="col-md-6">
+                <div class="admin-card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-gamepad"></i> System Control</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="d-grid">
+                                    <button class="btn btn-success-admin" onclick="startAutoTrading()">
+                                        <i class="fas fa-play"></i> Start Auto-Trading
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-grid">
+                                    <button class="btn btn-danger-admin" onclick="stopAutoTrading()">
+                                        <i class="fas fa-stop"></i> Stop Auto-Trading
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="d-grid">
+                                    <button class="btn btn-admin" onclick="clearAllTrades()">
+                                        <i class="fas fa-trash"></i> Clear All Trades
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-grid">
+                                    <button class="btn btn-admin" onclick="resetPortfolio()">
+                                        <i class="fas fa-undo"></i> Reset Portfolio
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="d-grid">
+                                    <button class="btn btn-admin" onclick="exportData()">
+                                        <i class="fas fa-download"></i> Export Data
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-grid">
+                                    <button class="btn btn-admin" onclick="importData()">
+                                        <i class="fas fa-upload"></i> Import Data
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Real-time Monitoring -->
+            <div class="col-md-6">
+                <div class="admin-card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-chart-line"></i> Real-time Monitoring</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <strong>Auto-Trading Status:</strong>
+                            <span class="status-indicator" id="trading-status-indicator"></span>
+                            <span id="trading-status-text">Stopped</span>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <strong>Data Feed Status:</strong>
+                            <span class="status-indicator" id="data-status-indicator"></span>
+                            <span id="data-status-text">Inactive</span>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <strong>Last Update:</strong>
+                            <span id="last-update">Never</span>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <strong>Data Quality:</strong>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar bg-success" id="data-quality-bar" style="width: 0%"></div>
+                            </div>
+                            <small class="text-muted" id="data-quality-text">0% - No data</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <strong>System Health:</strong>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar bg-success" id="system-health-bar" style="width: 100%"></div>
+                            </div>
+                            <small class="text-muted" id="system-health-text">100% - Healthy</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Security Monitoring -->
+            <div class="col-md-6">
+                <div class="admin-card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-shield-alt"></i> Security Monitoring</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <strong>Active Sessions:</strong>
+                            <span id="active-sessions">0</span>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <strong>Failed Logins (24h):</strong>
+                            <span id="failed-logins">0</span>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <strong>Security Events (24h):</strong>
+                            <span id="security-events">0</span>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <strong>Rate Violations (1h):</strong>
+                            <span id="rate-violations">0</span>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <button class="btn btn-admin btn-sm" onclick="loadSecurityEvents()">
+                                <i class="fas fa-list"></i> View Security Events
+                            </button>
+                            <button class="btn btn-danger-admin btn-sm" onclick="cleanupSessions()">
+                                <i class="fas fa-trash"></i> Cleanup Sessions
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notifications & Backup -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="admin-card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-bell"></i> Notification System</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <strong>Total Notifications:</strong>
+                            <span id="total-notifications">0</span>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <strong>Pending Notifications:</strong>
+                            <span id="pending-notifications">0</span>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <strong>Unread Notifications:</strong>
+                            <span id="unread-notifications">0</span>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <button class="btn btn-admin btn-sm" onclick="loadNotificationStats()">
+                                <i class="fas fa-sync"></i> Refresh Stats
+                            </button>
+                            <button class="btn btn-success-admin btn-sm" onclick="sendTestNotification()">
+                                <i class="fas fa-paper-plane"></i> Send Test
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="admin-card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-database"></i> Backup System</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <strong>Total Backups:</strong>
+                            <span id="total-backups">0</span>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <strong>Successful Backups:</strong>
+                            <span id="successful-backups">0</span>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <strong>Total Size:</strong>
+                            <span id="backup-total-size">0 MB</span>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <button class="btn btn-admin btn-sm" onclick="loadBackupStats()">
+                                <i class="fas fa-sync"></i> Refresh Stats
+                            </button>
+                            <button class="btn btn-success-admin btn-sm" onclick="createBackup('full')">
+                                <i class="fas fa-save"></i> Full Backup
+                            </button>
+                            <button class="btn btn-warning btn-sm" onclick="createBackup('database')">
+                                <i class="fas fa-database"></i> DB Backup
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Branding Management -->
+        <div class="row">
+            <div class="col-12">
+                <div class="admin-card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-palette"></i> Branding Settings</h5>
+                        <button class="btn btn-sm btn-admin float-end" onclick="loadBrandingSettings()">
+                            <i class="fas fa-sync"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Platform Name</label>
+                                    <input type="text" class="form-control" id="brand-platform-name" placeholder="Platform Name">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Short Name</label>
+                                    <input type="text" class="form-control" id="brand-short-name" placeholder="Short Name">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Company Name</label>
+                                    <input type="text" class="form-control" id="brand-company-name" placeholder="Company Name">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Support Email</label>
+                                    <input type="email" class="form-control" id="brand-support-email" placeholder="support@example.com">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Support Phone</label>
+                                    <input type="text" class="form-control" id="brand-support-phone" placeholder="+1-800-...">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Footer Text</label>
+                                    <textarea class="form-control" id="brand-footer-text" rows="2" placeholder="Footer disclaimer text"></textarea>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Primary Color</label>
+                                    <input type="color" class="form-control form-control-color" id="brand-primary-color" style="height:38px;">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Accent Color</label>
+                                    <input type="color" class="form-control form-control-color" id="brand-accent-color" style="height:38px;">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Default Currency</label>
+                                    <select class="form-select" id="brand-currency">
+                                        <option value="USD">USD</option>
+                                        <option value="INR">INR</option>
+                                        <option value="EUR">EUR</option>
+                                        <option value="GBP">GBP</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Timezone</label>
+                                    <select class="form-select" id="brand-timezone">
+                                        <option value="UTC">UTC</option>
+                                        <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
+                                        <option value="America/New_York">America/New_York (EST)</option>
+                                        <option value="Europe/London">Europe/London (GMT)</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Company Address</label>
+                                    <textarea class="form-control" id="brand-company-address" rows="2" placeholder="Company address"></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Notification Sender Name</label>
+                                    <input type="text" class="form-control" id="brand-notification-sender" placeholder="Sender name for notifications">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 text-center mt-3">
+                                <button class="btn btn-admin" onclick="saveBrandingSettings()">
+                                    <i class="fas fa-save"></i> Save Branding Settings
+                                </button>
+                                <small class="text-muted ms-3" id="branding-save-status"></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Plan Management -->\r\n        <div class=\"row\">\r\n            <div class=\"col-12\">\r\n                <div class=\"admin-card\">\r\n                    <div class=\"card-header\">\r\n                        <h5><i class=\"fas fa-crown\"></i> User Plan Management</h5>\r\n                    </div>\r\n                    <div class=\"card-body\">\r\n                        <div class=\"row align-items-end\">\r\n                            <div class=\"col-md-4\">\r\n                                <div class=\"mb-3\">\r\n                                    <label class=\"form-label\">Username</label>\r\n                                    <input type=\"text\" class=\"form-control\" id=\"upgrade-username\" placeholder=\"Enter username\">\r\n                                </div>\r\n                            </div>\r\n                            <div class=\"col-md-4\">\r\n                                <div class=\"mb-3\">\r\n                                    <label class=\"form-label\">Plan</label>\r\n                                    <select class=\"form-select\" id=\"upgrade-plan\">\r\n                                        <option value=\"free\">🆓 Free</option>\r\n                                        <option value=\"premium\">⚡ Premium (₹3,999/mo)</option>\r\n                                        <option value=\"pro\">🚀 Pro (₹7,999/mo)</option>\r\n                                        <option value=\"enterprise\">👑 Enterprise (Custom)</option>\r\n                                    </select>\r\n                                </div>\r\n                            </div>\r\n                            <div class=\"col-md-4\">\r\n                                <div class=\"mb-3\">\r\n                                    <button class=\"btn btn-admin\" onclick=\"upgradeUser()\">\r\n                                        <i class=\"fas fa-level-up-alt\"></i> Update Plan\r\n                                    </button>\r\n                                    <span id=\"upgrade-result\" class=\"ms-2\"></span>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n        </div>\r\n\r\n        <!-- System Logs -->
+        <div class="row">
+            <div class="col-12">
+                <div class="admin-card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-list-alt"></i> System Logs</h5>
+                        <button class="btn btn-sm btn-admin float-end" onclick="clearLogs()">
+                            <i class="fas fa-trash"></i> Clear Logs
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="log-container" id="system-logs">
+                            <div class="log-entry log-info">
+                                <span class="text-muted" id="admin-panel-loaded-time">[--:--:--]</span> Admin panel loaded successfully
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialize admin panel
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set the admin panel loaded timestamp
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', { 
+                hour12: false, 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit' 
+            });
+            document.getElementById('admin-panel-loaded-time').textContent = `[${timeString}]`;
+            
+            loadSystemStatus();
+            loadTradingParams();
+            loadBrandingSettings();
+            startMonitoring();
+            
+            // Form submissions
+            document.getElementById('api-injection-form').addEventListener('submit', handleApiInjection);
+            document.getElementById('trading-params-form').addEventListener('submit', handleTradingParams);
+        });
+
+        // Load system status
+        function loadSystemStatus() {
+            fetch('/api/admin/system-status')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('active-trades').textContent = data.active_trades || 0;
+                document.getElementById('total-pnl').textContent = `₹${data.total_pnl || '0.00'}`;
+                document.getElementById('win-rate').textContent = `${data.win_rate || 0}%`;
+                document.getElementById('api-status').textContent = data.trading_mode || 'DEMO';
+                
+                // Update status indicators
+                updateStatusIndicators(data);
+            })
+            .catch(error => {
+                addLog('Error loading system status: ' + error.message, 'error');
+            });
+        }
+
+        // Load trading parameters
+        function loadTradingParams() {
+            fetch('/api/admin/trading-params')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('max-trades').value = data.max_concurrent_trades || 5;
+                document.getElementById('risk-per-trade').value = data.risk_per_trade || 2;
+                document.getElementById('stop-loss').value = data.stop_loss || 3;
+                document.getElementById('take-profit').value = data.take_profit || 6;
+                document.getElementById('trading-strategy').value = data.strategy || 'momentum';
+            })
+            .catch(error => {
+                addLog('Error loading trading parameters: ' + error.message, 'error');
+            });
+        }
+
+        // Handle API injection form
+        function handleApiInjection(e) {
+            e.preventDefault();
+            
+            const formData = {
+                data_source: document.getElementById('data-source').value,
+                api_endpoint: document.getElementById('api-endpoint').value,
+                api_key: document.getElementById('api-key').value,
+                update_frequency: parseInt(document.getElementById('update-frequency').value),
+                symbols: document.getElementById('symbols').value.split(',').map(s => s.trim())
+            };
+            
+            fetch('/api/admin/start-data-injection', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    addLog('Data injection started successfully', 'success');
+                    updateDataStatus('Active');
+                } else {
+                    addLog('Failed to start data injection: ' + data.error, 'error');
+                }
+            })
+            .catch(error => {
+                addLog('Error starting data injection: ' + error.message, 'error');
+            });
+        }
+
+        // Handle trading parameters form
+        function handleTradingParams(e) {
+            e.preventDefault();
+            
+            const formData = {
+                max_concurrent_trades: parseInt(document.getElementById('max-trades').value),
+                risk_per_trade: parseFloat(document.getElementById('risk-per-trade').value),
+                stop_loss: parseFloat(document.getElementById('stop-loss').value),
+                take_profit: parseFloat(document.getElementById('take-profit').value),
+                strategy: document.getElementById('trading-strategy').value
+            };
+            
+            fetch('/api/admin/update-trading-params', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    addLog('Trading parameters updated successfully', 'success');
+                } else {
+                    addLog('Failed to update parameters: ' + data.error, 'error');
+                }
+            })
+            .catch(error => {
+                addLog('Error updating parameters: ' + error.message, 'error');
+            });
+        }
+
+        // System control functions
+        function startAutoTrading() {
+            fetch('/api/admin/start-auto-trading', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    addLog('Auto-trading started successfully', 'success');
+                    updateTradingStatus('Running');
+                } else {
+                    addLog('Failed to start auto-trading: ' + data.error, 'error');
+                }
+            })
+            .catch(error => {
+                addLog('Error starting auto-trading: ' + error.message, 'error');
+            });
+        }
+
+        function stopAutoTrading() {
+            fetch('/api/admin/stop-auto-trading', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    addLog('Auto-trading stopped successfully', 'success');
+                    updateTradingStatus('Stopped');
+                } else {
+                    addLog('Failed to stop auto-trading: ' + data.error, 'error');
+                }
+            })
+            .catch(error => {
+                addLog('Error stopping auto-trading: ' + error.message, 'error');
+            });
+        }
+
+        function stopDataInjection() {
+            fetch('/api/admin/stop-data-injection', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    addLog('Data injection stopped successfully', 'success');
+                    updateDataStatus('Inactive');
+                } else {
+                    addLog('Failed to stop data injection: ' + data.error, 'error');
+                }
+            })
+            .catch(error => {
+                addLog('Error stopping data injection: ' + error.message, 'error');
+            });
+        }
+
+        function clearAllTrades() {
+            if (confirm('Are you sure you want to clear all trades? This action cannot be undone.')) {
+                fetch('/api/admin/clear-trades', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        addLog('All trades cleared successfully', 'success');
+                        loadSystemStatus();
+                    } else {
+                        addLog('Failed to clear trades: ' + data.error, 'error');
+                    }
+                })
+                .catch(error => {
+                    addLog('Error clearing trades: ' + error.message, 'error');
+                });
+            }
+        }
+
+        function resetPortfolio() {
+            if (confirm('Are you sure you want to reset the portfolio? This will reset all balances and positions.')) {
+                fetch('/api/admin/reset-portfolio', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        addLog('Portfolio reset successfully', 'success');
+                        loadSystemStatus();
+                    } else {
+                        addLog('Failed to reset portfolio: ' + data.error, 'error');
+                    }
+                })
+                .catch(error => {
+                    addLog('Error resetting portfolio: ' + error.message, 'error');
+                });
+            }
+        }
+
+        function exportData() {
+            fetch('/api/admin/export-data')
+            .then(response => response.blob())
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'trading_data_export.json';
+                a.click();
+                window.URL.revokeObjectURL(url);
+                addLog('Data exported successfully', 'success');
+            })
+            .catch(error => {
+                addLog('Error exporting data: ' + error.message, 'error');
+            });
+        }
+
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const data = JSON.parse(e.target.result);
+                            fetch('/api/admin/import-data', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(data)
+                            })
+                            .then(response => response.json())
+                            .then(result => {
+                                if (result.status === 'success') {
+                                    addLog('Data imported successfully', 'success');
+                                    loadSystemStatus();
+                                } else {
+                                    addLog('Failed to import data: ' + result.error, 'error');
+                                }
+                            })
+                            .catch(error => {
+                                addLog('Error importing data: ' + error.message, 'error');
+                            });
+                        } catch (error) {
+                            addLog('Invalid JSON file: ' + error.message, 'error');
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
+        }
+
+        function loadBrandingSettings() {
+            fetch('/api/admin/branding')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('brand-platform-name').value = data.platform_name || '';
+                document.getElementById('brand-short-name').value = data.short_name || '';
+                document.getElementById('brand-company-name').value = data.company_name || '';
+                document.getElementById('brand-support-email').value = data.support_email || '';
+                document.getElementById('brand-support-phone').value = data.support_phone || '';
+                document.getElementById('brand-footer-text').value = data.footer_text || '';
+                document.getElementById('brand-primary-color').value = data.primary_color || '#00C2FF';
+                document.getElementById('brand-accent-color').value = data.accent_color || '#00E676';
+                document.getElementById('brand-currency').value = data.default_currency || 'USD';
+                document.getElementById('brand-timezone').value = data.timezone || 'UTC';
+                document.getElementById('brand-company-address').value = data.company_address || '';
+                document.getElementById('brand-notification-sender').value = data.notification_sender_name || '';
+                addLog('Branding settings loaded', 'success');
+            })
+            .catch(error => {
+                addLog('Error loading branding settings: ' + error.message, 'error');
+            });
+        }
+
+        function saveBrandingSettings() {
+            const settings = {
+                platform_name: document.getElementById('brand-platform-name').value,
+                short_name: document.getElementById('brand-short-name').value,
+                company_name: document.getElementById('brand-company-name').value,
+                support_email: document.getElementById('brand-support-email').value,
+                support_phone: document.getElementById('brand-support-phone').value,
+                footer_text: document.getElementById('brand-footer-text').value,
+                primary_color: document.getElementById('brand-primary-color').value,
+                accent_color: document.getElementById('brand-accent-color').value,
+                default_currency: document.getElementById('brand-currency').value,
+                timezone: document.getElementById('brand-timezone').value,
+                company_address: document.getElementById('brand-company-address').value,
+                notification_sender_name: document.getElementById('brand-notification-sender').value
+            };
+
+            const statusEl = document.getElementById('branding-save-status');
+            statusEl.textContent = 'Saving...';
+            statusEl.style.color = '#ffc107';
+
+            fetch('/api/admin/branding', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(settings)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    statusEl.textContent = '✓ Saved successfully!';
+                    statusEl.style.color = '#00e676';
+                    addLog('Branding settings saved successfully', 'success');
+                    // Reload branding to reflect changes
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    statusEl.textContent = '✗ Error: ' + (data.error || 'Unknown error');
+                    statusEl.style.color = '#ff4d4f';
+                    addLog('Error saving branding settings', 'error');
+                }
+            })
+            .catch(error => {
+                statusEl.textContent = '✗ Error: ' + error.message;
+                statusEl.style.color = '#ff4d4f';
+                addLog('Error saving branding settings: ' + error.message, 'error');
+            });
+        }
+
+        function clearLogs() {
+            document.getElementById('system-logs').innerHTML = '';
+            addLog('Logs cleared', 'info');
+        }
+
+        // Utility functions
+        function addLog(message, type = 'info') {
+            const logsContainer = document.getElementById('system-logs');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.innerHTML = `<span class="text-muted">[${timestamp}]</span> ${message}`;
+            logsContainer.appendChild(logEntry);
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+        }
+
+        function updateStatusIndicators(data) {
+            // Update trading status
+            const tradingIndicator = document.getElementById('trading-status-indicator');
+            const tradingText = document.getElementById('trading-status-text');
+            
+            if (data.auto_trading_active) {
+                tradingIndicator.className = 'status-indicator status-online';
+                tradingText.textContent = 'Running';
+            } else {
+                tradingIndicator.className = 'status-indicator status-offline';
+                tradingText.textContent = 'Stopped';
+            }
+            
+            // Update data status
+            const dataIndicator = document.getElementById('data-status-indicator');
+            const dataText = document.getElementById('data-status-text');
+            
+            if (data.data_feed_active) {
+                dataIndicator.className = 'status-indicator status-online';
+                dataText.textContent = 'Active';
+            } else {
+                dataIndicator.className = 'status-indicator status-offline';
+                dataText.textContent = 'Inactive';
+            }
+            
+            // Update system status badge
+            const systemStatus = document.getElementById('system-status');
+            if (data.trading_mode === 'LIVE') {
+                systemStatus.className = 'api-status api-active';
+                systemStatus.textContent = 'LIVE MODE';
+            } else {
+                systemStatus.className = 'api-status api-inactive';
+                systemStatus.textContent = 'DEMO MODE';
+            }
+        }
+
+        function updateTradingStatus(status) {
+            const indicator = document.getElementById('trading-status-indicator');
+            const text = document.getElementById('trading-status-text');
+            
+            if (status === 'Running') {
+                indicator.className = 'status-indicator status-online';
+                text.textContent = 'Running';
+            } else {
+                indicator.className = 'status-indicator status-offline';
+                text.textContent = 'Stopped';
+            }
+        }
+
+        function updateDataStatus(status) {
+            const indicator = document.getElementById('data-status-indicator');
+            const text = document.getElementById('data-status-text');
+            
+            if (status === 'Active') {
+                indicator.className = 'status-indicator status-online';
+                text.textContent = 'Active';
+            } else {
+                indicator.className = 'status-indicator status-offline';
+                text.textContent = 'Inactive';
+            }
+        }
+
+        // Security functions
+        function loadSecurityStats() {
+            fetch('/api/admin/security-stats')
+                .then(response => response.json())
+                .then(result => {
+                    if (result.status === 'success') {
+                        const stats = result.security_stats;
+                        document.getElementById('active-sessions').textContent = stats.active_sessions || 0;
+                        document.getElementById('failed-logins').textContent = stats.failed_logins_24h || 0;
+                        document.getElementById('security-events').textContent = stats.security_events_24h || 0;
+                        document.getElementById('rate-violations').textContent = stats.rate_violations_1h || 0;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading security stats:', error);
+                });
+        }
+
+        function loadSecurityEvents() {
+            fetch('/api/admin/security-events?limit=50')
+                .then(response => response.json())
+                .then(result => {
+                    if (result.status === 'success') {
+                        const events = result.security_events;
+                        let eventsHtml = '<div class="security-events-list">';
+                        
+                        if (events.length === 0) {
+                            eventsHtml += '<p class="text-muted">No security events found.</p>';
+                        } else {
+                            events.forEach(event => {
+                                const severityClass = event.severity.toLowerCase();
+                                eventsHtml += `
+                                    <div class="security-event-item mb-2 p-2 border rounded">
+                                        <div class="d-flex justify-content-between">
+                                            <span class="badge bg-${severityClass === 'error' ? 'danger' : severityClass === 'warning' ? 'warning' : 'info'}">${event.severity}</span>
+                                            <small class="text-muted">${event.timestamp}</small>
+                                        </div>
+                                        <div class="mt-1">
+                                            <strong>${event.event_type}</strong>
+                                            <p class="mb-0 small">${event.details}</p>
+                                            <small class="text-muted">IP: ${event.ip_address || 'N/A'} | User: ${event.user_id || 'N/A'}</small>
+                                        </div>
+                                    </div>
+                                `;
+                            });
+                        }
+                        
+                        eventsHtml += '</div>';
+                        
+                        // Show in modal or alert
+                        const modal = document.createElement('div');
+                        modal.className = 'modal fade';
+                        modal.innerHTML = `
+                            <div class="modal-dialog modal-lg">
+                                <div class="modal-content bg-dark text-white">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Security Events</h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        ${eventsHtml}
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        document.body.appendChild(modal);
+                        const bsModal = new bootstrap.Modal(modal);
+                        bsModal.show();
+                        
+                        modal.addEventListener('hidden.bs.modal', () => {
+                            document.body.removeChild(modal);
+                        });
+                    }
+                })
+                .catch(error => {
+                    addLog('Error loading security events: ' + error.message, 'error');
+                });
+        }
+
+        function cleanupSessions() {
+            if (confirm('Are you sure you want to cleanup expired sessions?')) {
+                fetch('/api/admin/cleanup-sessions', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(result => {
+                        if (result.status === 'success') {
+                            addLog(result.message, 'success');
+                            loadSecurityStats();
+                        } else {
+                            addLog('Failed to cleanup sessions: ' + result.error, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        addLog('Error cleaning up sessions: ' + error.message, 'error');
+                    });
+            }
+        }
+
+        // Notification functions
+        function loadNotificationStats() {
+            fetch('/api/admin/notification-stats')
+                .then(response => response.json())
+                .then(result => {
+                    if (result.status === 'success') {
+                        const stats = result.notification_stats;
+                        document.getElementById('total-notifications').textContent = stats.total_notifications || 0;
+                        document.getElementById('pending-notifications').textContent = stats.pending_notifications || 0;
+                        document.getElementById('unread-notifications').textContent = stats.unread_notifications || 0;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading notification stats:', error);
+                });
+        }
+
+        function sendTestNotification() {
+            const message = prompt('Enter test notification message:', 'This is a test notification from admin panel');
+            if (message) {
+                fetch('/api/admin/send-test-notification', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: 1,
+                        type: 'system_alert',
+                        message: message
+                    })
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.status === 'success') {
+                        addLog('Test notification sent successfully', 'success');
+                        loadNotificationStats();
+                    } else {
+                        addLog('Failed to send test notification: ' + result.error, 'error');
+                    }
+                })
+                .catch(error => {
+                    addLog('Error sending test notification: ' + error.message, 'error');
+                });
+            }
+        }
+
+        // Backup functions
+        function loadBackupStats() {
+            fetch('/api/admin/backup-stats')
+                .then(response => response.json())
+                .then(result => {
+                    if (result.status === 'success') {
+                        const stats = result.backup_stats;
+                        document.getElementById('total-backups').textContent = stats.total_backups || 0;
+                        document.getElementById('successful-backups').textContent = stats.successful_backups || 0;
+                        
+                        // Format size
+                        const sizeInMB = Math.round((stats.total_size || 0) / (1024 * 1024));
+                        document.getElementById('backup-total-size').textContent = sizeInMB + ' MB';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading backup stats:', error);
+                });
+        }
+
+        function createBackup(type) {
+            if (confirm(`Are you sure you want to create a ${type} backup?`)) {
+                fetch('/api/admin/create-backup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: type })
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.status === 'success') {
+                        addLog(`${type} backup created successfully: ${result.backup_path}`, 'success');
+                        loadBackupStats();
+                    } else {
+                        addLog(`Failed to create ${type} backup: ` + result.error, 'error');
+                    }
+                })
+                .catch(error => {
+                    addLog(`Error creating ${type} backup: ` + error.message, 'error');
+                });
+            }
+        }
+
+        // Start monitoring
+        function startMonitoring() {
+            setInterval(() => {
+                loadSystemStatus();
+                loadSecurityStats();
+                loadNotificationStats();
+                loadBackupStats();
+                document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+            }, 5000); // Update every 5 seconds
+        }
+
+        // User plan upgrade function
+        function upgradeUser() {
+            var username = document.getElementById('upgrade-username').value.trim();
+            var plan = document.getElementById('upgrade-plan').value;
+            var resultEl = document.getElementById('upgrade-result');
+            if (!username) {
+                resultEl.textContent = '❌ Please enter a username';
+                resultEl.style.color = '#ff4d4f';
+                return;
+            }
+            resultEl.textContent = '⏳ Updating...';
+            resultEl.style.color = '#ffc107';
+            fetch('/api/admin/upgrade_user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: username, plan: plan })
+            })
+            .then(function(r) { return r.json().then(function(d) { return {s: r.status, d: d}; }); })
+            .then(function(res) {
+                if (res.s === 200) {
+                    resultEl.textContent = '✅ ' + res.d.message;
+                    resultEl.style.color = '#00e676';
+                    addLog('User plan updated: ' + username + ' → ' + plan, 'success');
+                } else {
+                    resultEl.textContent = '❌ ' + (res.d.error || 'Error');
+                    resultEl.style.color = '#ff4d4f';
+                }
+            })
+            .catch(function(err) {
+                resultEl.textContent = '❌ ' + err.message;
+                resultEl.style.color = '#ff4d4f';
+            });
+        }
+    </script>
+</body>
+</html>

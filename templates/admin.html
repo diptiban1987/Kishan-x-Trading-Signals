@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - {{ platform_name }}{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+    <h1 style="font-size:1.5rem;font-weight:700;margin:0;"><i class="fas fa-shield-alt text-blue" style="margin-right:8px;"></i> Admin Panel</h1>
+  </div>
+
+  <div class="dash-table-card">
+    <h3>User Management</h3>
+    <div style="overflow-x:auto;">
+      <table class="dash-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>Balance</th>
+            <th>Premium</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in users %}
+          <tr>
+            <form method="post">
+              <td>{{ user.id }}</td>
+              <td class="font-semibold">{{ user.username }}</td>
+              <td>
+                <input type="number" class="input" name="new_balance" value="{{ user.balance }}" step="0.01" style="width:120px;padding:6px 10px;font-size:0.85rem;">
+              </td>
+              <td>
+                {% if user.is_premium %}
+                <span class="badge badge-green"><i class="fas fa-crown"></i> Premium</span>
+                {% else %}
+                <span class="badge badge-blue">Free</span>
+                {% endif %}
+              </td>
+              <td>
+                <input type="hidden" name="user_id" value="{{ user.id }}">
+                <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save"></i> Update</button>
+              </td>
+            </form>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div style="margin-top:16px;">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+  </div>
+</div>
+{% endblock %}

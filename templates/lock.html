@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo Locked - {{ platform_name }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-primary: #0A0F1E;
+            --bg-card: #1A2238;
+            --accent-blue: #00C2FF;
+            --accent-warning: #FFC107;
+            --accent-red: #FF4D4F;
+            --text-primary: #F9FAFB;
+            --text-secondary: #94A3B8;
+            --text-muted: #64748B;
+            --border-color: rgba(255,255,255,0.08);
+            --font-family: 'Inter', 'Segoe UI', sans-serif;
+            --radius-lg: 16px;
+            --radius-sm: 6px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; }
+        body {
+            font-family: var(--font-family);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            position: relative;
+            overflow: hidden;
+        }
+        body::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 50%, rgba(255,193,7,0.04) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 50%, rgba(0,194,255,0.03) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        .lock-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 40px 36px;
+            max-width: 380px;
+            width: 90%;
+            position: relative;
+            z-index: 1;
+            animation: fadeIn 0.5s ease;
+            text-align: center;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .lock-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: rgba(255,193,7,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            font-size: 1.5rem;
+            color: var(--accent-warning);
+        }
+        .lock-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        .lock-desc {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+        .lock-form input[type="password"] {
+            width: 100%;
+            padding: 12px 14px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            margin-bottom: 16px;
+        }
+        .lock-form input[type="password"]:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(0, 194, 255, 0.15);
+        }
+        .lock-form input[type="password"]::placeholder {
+            color: var(--text-muted);
+        }
+        .lock-form button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, var(--accent-blue), #0099CC);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: var(--font-family);
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .lock-form button:hover {
+            box-shadow: 0 0 30px rgba(0, 194, 255, 0.3);
+            transform: translateY(-1px);
+        }
+        .error {
+            color: var(--accent-red);
+            background: rgba(255, 77, 79, 0.1);
+            border: 1px solid rgba(255, 77, 79, 0.2);
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 16px;
+            font-size: 0.85rem;
+        }
+        .demo-note {
+            margin-top: 16px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        @media (max-width: 480px) {
+            .lock-card { padding: 28px 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="lock-card">
+        <div class="lock-icon"><i class="fas fa-lock"></i></div>
+        <div class="lock-title">Demo Session Expired</div>
+        <div class="lock-desc">Your 30-minute demo session has ended.<br>Enter the unlock password to continue trading.</div>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="error">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        <form method="POST" action="/unlock" class="lock-form">
+            <input type="password" name="password" placeholder="Enter unlock password" required autofocus>
+            <button type="submit"><i class="fas fa-unlock-alt" style="margin-right:6px;"></i> Unlock</button>
+        </form>
+        <div class="demo-note">Demo will automatically relock after 30 minutes.</div>
+    </div>
+</body>
+</html>

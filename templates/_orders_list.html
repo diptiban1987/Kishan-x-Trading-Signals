@@ -1,0 +1,82 @@
+<div id="orders-list-container">
+  <style>
+    .orders-list { margin-top:12px; }
+    .orders-list table { width:100%; border-collapse:collapse; font-size:0.8rem; }
+    .orders-list th { text-align:left; padding:6px 8px; color:var(--text-muted); font-weight:500; border-bottom:1px solid var(--border-color); font-size:0.7rem; text-transform:uppercase; letter-spacing:0.03em; }
+    .orders-list td { padding:6px 8px; border-bottom:1px solid var(--border-color); color:var(--text-secondary); }
+    .orders-list tr:hover td { background:rgba(255,255,255,0.02); }
+    .orders-list .order-status { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:999px; font-size:0.7rem; font-weight:600; }
+    .order-status.pending { background:rgba(241,196,15,0.12); color:#f1c40f; }
+    .order-status.executed { background:rgba(0,230,118,0.12); color:var(--accent-green); }
+    .order-status.cancelled { background:rgba(255,77,79,0.12); color:var(--accent-red); }
+    .order-status.rejected { background:rgba(255,77,79,0.12); color:var(--accent-red); }
+    .orders-list .order-type-badge { font-size:0.65rem; padding:1px 6px; border-radius:4px; background:var(--bg-primary); color:var(--accent-blue); border:1px solid var(--border-color); }
+    .orders-list .cancel-btn { padding:2px 8px; border:1px solid var(--accent-red); color:var(--accent-red); background:transparent; border-radius:4px; cursor:pointer; font-size:0.7rem; transition:all var(--transition-fast); }
+    .orders-list .cancel-btn:hover { background:rgba(255,77,79,0.1); }
+    .orders-list .dir-buy { color:var(--accent-green); }
+    .orders-list .dir-sell { color:var(--accent-red); }
+    .orders-list-empty { text-align:center; padding:20px; color:var(--text-muted); font-size:0.85rem; }
+  </style>
+
+  <div class="orders-list">
+    <table>
+      <thead>
+        <tr><th>Time</th><th>Symbol</th><th>Type</th><th>Direction</th><th>Qty</th><th>Price</th><th>Status</th><th></th></tr>
+      </thead>
+      <tbody id="orders-tbody">
+        <tr><td colspan="8" class="orders-list-empty">Loading orders...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+var ordersRefreshInterval = null;
+
+function refreshOrders() {
+  fetch('/api/orders?limit=20')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var tbody = document.getElementById('orders-tbody');
+      if (!data.orders || data.orders.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="orders-list-empty">No orders yet. Place one above.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = data.orders.map(function(o) {
+        var ts = o.created_at ? o.created_at.split('.')[0].replace('T', ' ') : '--';
+        var dirClass = o.direction === 'buy' ? 'dir-buy' : 'dir-sell';
+        var dirIcon = o.direction === 'buy' ? '▲' : '▼';
+        var priceDisplay = o.price ? o.price.toFixed(5) : (o.stop_price ? 'SL ' + o.stop_price.toFixed(5) : '--');
+        var cancelBtn = o.status === 'pending' ? '<button class="cancel-btn" onclick="cancelOrder(' + o.id + ')">Cancel</button>' : '';
+        return '<tr><td>' + ts + '</td><td><strong>' + o.symbol + '</strong></td><td><span class="order-type-badge">' + o.order_type + '</span></td><td class="' + dirClass + '">' + dirIcon + ' ' + o.direction.toUpperCase() + '</td><td>' + o.quantity + '</td><td>' + priceDisplay + '</td><td><span class="order-status ' + o.status + '">' + o.status + '</span></td><td>' + cancelBtn + '</td></tr>';
+      }).join('');
+    })
+    .catch(function(e) {
+      document.getElementById('orders-tbody').innerHTML = '<tr><td colspan="8" class="orders-list-empty">Error loading orders</td></tr>';
+    });
+}
+
+function cancelOrder(orderId) {
+  fetch('/api/orders/' + orderId + '/cancel', { method: 'POST' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.success) { showToast('Order cancelled', 'success'); refreshOrders(); }
+      else { showToast(data.error || 'Failed to cancel', 'error'); }
+    })
+    .catch(function() { showToast('Error cancelling order', 'error'); });
+}
+
+function startOrdersAutoRefresh() {
+  refreshOrders();
+  if (ordersRefreshInterval) clearInterval(ordersRefreshInterval);
+  ordersRefreshInterval = setInterval(refreshOrders, 15000);
+}
+
+function stopOrdersAutoRefresh() {
+  if (ordersRefreshInterval) { clearInterval(ordersRefreshInterval); ordersRefreshInterval = null; }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  if (document.getElementById('orders-tbody')) startOrdersAutoRefresh();
+});
+</script>

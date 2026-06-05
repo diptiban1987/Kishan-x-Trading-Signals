@@ -1,0 +1,114 @@
+<div class="video-tutorials-section" id="videoTutorials">
+    <div class="card-header">
+        <h3><i class="fas fa-graduation-cap"></i> Video Tutorials</h3>
+    </div>
+    <div class="video-grid">
+        <div class="video-card" onclick="openVideo('t7kHjJhYcBc','Platform Overview')">
+            <div class="video-thumb">
+                <img src="https://img.youtube.com/vi/t7kHjJhYcBc/mqdefault.jpg" alt="Platform Overview" loading="lazy">
+                <div class="video-play"><i class="fas fa-play"></i></div>
+            </div>
+            <div class="video-info">
+                <h4>Platform Overview</h4>
+                <p>Navigate the dashboard, sidebar, and key features</p>
+            </div>
+        </div>
+        <div class="video-card" onclick="openVideo('3t8ZeY_hOUs','How to Read Charts')">
+            <div class="video-thumb">
+                <img src="https://img.youtube.com/vi/3t8ZeY_hOUs/mqdefault.jpg" alt="Chart Reading" loading="lazy">
+                <div class="video-play"><i class="fas fa-play"></i></div>
+            </div>
+            <div class="video-info">
+                <h4>How to Read Charts</h4>
+                <p>Understand candlesticks, indicators, and chart patterns</p>
+            </div>
+        </div>
+        <div class="video-card" onclick="openVideo('d0x7U_6P4X4','Order Types Explained')">
+            <div class="video-thumb">
+                <img src="https://img.youtube.com/vi/d0x7U_6P4X4/mqdefault.jpg" alt="Order Types" loading="lazy">
+                <div class="video-play"><i class="fas fa-play"></i></div>
+            </div>
+            <div class="video-info">
+                <h4>Order Types Explained</h4>
+                <p>Market, Limit, Stop Loss, and Take Profit orders</p>
+            </div>
+        </div>
+        <div class="video-card" onclick="openVideo('i4YM1q4ENkk','Risk Management')">
+            <div class="video-thumb">
+                <img src="https://img.youtube.com/vi/i4YM1q4ENkk/mqdefault.jpg" alt="Risk Management" loading="lazy">
+                <div class="video-play"><i class="fas fa-play"></i></div>
+            </div>
+            <div class="video-info">
+                <h4>Risk Management</h4>
+                <p>Position sizing, stop-losses, and risk-reward ratios</p>
+            </div>
+        </div>
+        <div class="video-card" onclick="openVideo('boZis7f5Xxg','Auto-Trading Bot Guide')">
+            <div class="video-thumb">
+                <img src="https://img.youtube.com/vi/boZis7f5Xxg/mqdefault.jpg" alt="Auto Trading Bot" loading="lazy">
+                <div class="video-play"><i class="fas fa-play"></i></div>
+            </div>
+            <div class="video-info">
+                <h4>Auto-Trading Bot Guide</h4>
+                <p>Setup, configure, and monitor your trading bot</p>
+            </div>
+        </div>
+        <div class="video-card" onclick="openVideo('_BCGqR_Z1qE','AI Assistant Tips')">
+            <div class="video-thumb">
+                <img src="https://img.youtube.com/vi/_BCGqR_Z1qE/mqdefault.jpg" alt="AI Assistant" loading="lazy">
+                <div class="video-play"><i class="fas fa-play"></i></div>
+            </div>
+            <div class="video-info">
+                <h4>AI Assistant Tips</h4>
+                <p>Get signals, analysis, and trading advice from AI</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Video Modal -->
+<div id="videoModal" class="video-modal" style="display:none" onclick="closeVideo(event)">
+    <div class="video-modal-content" onclick="event.stopPropagation()">
+        <button class="video-modal-close" onclick="closeVideo()"><i class="fas fa-times"></i></button>
+        <h4 id="videoModalTitle">Video</h4>
+        <div class="video-modal-embed">
+            <iframe id="videoIframe" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+        </div>
+    </div>
+</div>
+
+<style>
+.video-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;padding:16px}
+.video-card{border-radius:12px;overflow:hidden;background:var(--bg-dark,#0a0f1e);border:1px solid var(--border-color,#2a2f3e);cursor:pointer;transition:all .3s}
+.video-card:hover{border-color:var(--accent-cyan,#00C2FF);transform:translateY(-2px)}
+.video-thumb{position:relative;aspect-ratio:16/9;overflow:hidden;background:#111}
+.video-thumb img{width:100%;height:100%;object-fit:cover;transition:transform .3s}
+.video-card:hover .video-thumb img{transform:scale(1.05)}
+.video-play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);opacity:0;transition:opacity .3s}
+.video-card:hover .video-play{opacity:1}
+.video-play i{font-size:32px;color:#fff;width:56px;height:56px;border-radius:50%;background:rgba(255,0,0,0.85);display:flex;align-items:center;justify-content:center;padding-left:4px}
+.video-info{padding:12px 14px}
+.video-info h4{font-size:14px;font-weight:600;margin:0 0 4px;color:var(--text-primary,#fff);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.video-info p{font-size:12px;color:var(--text-muted,#888);margin:0;line-height:1.4}
+.video-modal{position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;padding:20px}
+.video-modal-content{position:relative;width:100%;max-width:800px;background:var(--card-bg,#1a1f2e);border-radius:16px;overflow:hidden}
+.video-modal-close{position:absolute;top:12px;right:12px;z-index:2;background:rgba(0,0,0,0.6);border:none;color:#fff;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
+.video-modal-close:hover{background:rgba(255,0,0,0.8)}
+.video-modal-content h4{padding:16px 20px 0;margin:0;font-size:16px;color:var(--text-primary,#fff)}
+.video-modal-embed{position:relative;width:100%;aspect-ratio:16/9;margin-top:12px}
+.video-modal-embed iframe{position:absolute;inset:0;width:100%;height:100%}
+</style>
+
+<script>
+function openVideo(videoId, title) {
+    document.getElementById('videoModal').style.display = 'flex';
+    document.getElementById('videoModalTitle').textContent = title || 'Video Tutorial';
+    document.getElementById('videoIframe').src = 'https://www.youtube.com/embed/' + videoId + '?autoplay=1&rel=0';
+}
+
+function closeVideo(e) {
+    if (e && e.target !== e.currentTarget && e.target.closest('.video-modal-content')) return;
+    document.getElementById('videoModal').style.display = 'none';
+    document.getElementById('videoIframe').src = '';
+}
+</script>

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - {{ platform_name }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-primary: #0A0F1E;
+            --bg-card: #1A2238;
+            --accent-blue: #00C2FF;
+            --accent-green: #00E676;
+            --accent-red: #FF4D4F;
+            --text-primary: #F9FAFB;
+            --text-secondary: #94A3B8;
+            --text-muted: #64748B;
+            --border-color: rgba(255,255,255,0.08);
+            --font-family: 'Inter', 'Segoe UI', sans-serif;
+            --radius-lg: 16px;
+            --radius-sm: 6px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; }
+        body {
+            font-family: var(--font-family);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            position: relative;
+            overflow: hidden;
+        }
+        body::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 50%, rgba(0, 194, 255, 0.05) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 50%, rgba(0, 230, 118, 0.03) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        .auth-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 40px 36px;
+            max-width: 400px;
+            width: 90%;
+            position: relative;
+            z-index: 1;
+            animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .auth-logo {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            display: block;
+            margin: 0 auto 16px;
+            object-fit: cover;
+        }
+        .auth-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            text-align: center;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        .auth-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-bottom: 28px;
+        }
+        .auth-card h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .error {
+            color: var(--accent-red);
+            background: rgba(255, 77, 79, 0.1);
+            border: 1px solid rgba(255, 77, 79, 0.2);
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 16px;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px 14px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-group input:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(0, 194, 255, 0.15);
+        }
+        .form-group input::placeholder {
+            color: var(--text-muted);
+        }
+        .btn-primary {
+            width: 100%;
+            padding: 13px;
+            background: linear-gradient(135deg, var(--accent-blue), #0099CC);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: var(--font-family);
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 4px;
+        }
+        .btn-primary:hover {
+            box-shadow: 0 0 30px rgba(0, 194, 255, 0.3);
+            transform: translateY(-1px);
+        }
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+        .auth-link {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        .auth-link a {
+            color: var(--accent-blue);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .auth-link a:hover {
+            text-decoration: underline;
+        }
+        .benefits {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+        .benefit {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        .benefit i {
+            color: var(--accent-green);
+            font-size: 0.75rem;
+            width: 16px;
+        }
+        @media (max-width: 480px) {
+            .auth-card {
+                padding: 28px 20px;
+                width: 95%;
+            }
+            .auth-logo {
+                width: 44px;
+                height: 44px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-card">
+        <img src="{{ url_for('static', filename=get_setting('platform_logo')) }}" alt="{{ platform_name }} Logo" class="auth-logo">
+        <div class="auth-title">{{ platform_name }}</div>
+        <div class="auth-subtitle">Start Your AI-Powered Trading Journey</div>
+        <h2>Create Account</h2>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <p class="error">{{ message }}</p>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        <form method="POST">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" placeholder="Choose a username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" placeholder="Create a strong password" required>
+            </div>
+            <button type="submit" class="btn-primary"><i class="fas fa-user-plus" style="margin-right:6px;"></i> Register</button>
+        </form>
+        <p class="auth-link">Already have an account? <a href="/login">Login</a></p>
+        <div class="benefits">
+            <div class="benefit"><i class="fas fa-check"></i> AI-powered trading signals</div>
+            <div class="benefit"><i class="fas fa-check"></i> Real-time market data</div>
+            <div class="benefit"><i class="fas fa-check"></i> Free demo trading account</div>
+            <div class="benefit"><i class="fas fa-check"></i> 24/7 automated trading</div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,5 @@
+[
+    "AUDUSD", "EURUSD", "GBPUSD", "USDJPY",
+    "^NSEI", "^NSEBANK", "^BSESN", "^CNXFIN", "^NSEMDCP50",
+    "EURUSD_OTC", "GBPUSD_OTC", "USDJPY_OTC"
+] 

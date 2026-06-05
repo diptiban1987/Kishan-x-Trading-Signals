@@ -1,0 +1,131 @@
+<div id="tutorialOverlay" class="tutorial-overlay" style="display:none">
+    <div class="tutorial-backdrop"></div>
+    <div class="tutorial-card">
+        <div class="tutorial-header">
+            <div class="tutorial-steps">
+                <span class="tutorial-dot active"></span>
+                <span class="tutorial-dot"></span>
+                <span class="tutorial-dot"></span>
+                <span class="tutorial-dot"></span>
+                <span class="tutorial-dot"></span>
+                <span class="tutorial-dot"></span>
+            </div>
+            <button class="tutorial-skip" onclick="skipTutorial()">Skip <i class="fas fa-times"></i></button>
+        </div>
+        <div class="tutorial-body">
+            <!-- Step 1 -->
+            <div class="tutorial-step active" data-step="0">
+                <div class="tutorial-icon"><i class="fas fa-rocket"></i></div>
+                <h3>Welcome to {{ platform_name }}</h3>
+                <p>Your AI-powered trading platform. Let's take a quick tour to get you started in under 60 seconds.</p>
+            </div>
+            <!-- Step 2 -->
+            <div class="tutorial-step" data-step="1">
+                <div class="tutorial-icon"><i class="fas fa-chart-line"></i></div>
+                <h3>Market Dashboard</h3>
+                <p>Track live forex pairs, view real-time charts, and manage your trades from the <strong>Dashboard</strong>. Use the sidebar to navigate between markets.</p>
+            </div>
+            <!-- Step 3 -->
+            <div class="tutorial-step" data-step="2">
+                <div class="tutorial-icon"><i class="fas fa-rupee-sign"></i></div>
+                <h3>Indian Markets</h3>
+                <p>Trade Nifty, Bank Nifty, and stocks. Set entry prices, stop-loss, and take-profit levels using advanced order types — Market, Limit, SL, and TP.</p>
+            </div>
+            <!-- Step 4 -->
+            <div class="tutorial-step" data-step="3">
+                <div class="tutorial-icon"><i class="fas fa-robot"></i></div>
+                <h3>Auto-Trading Bot</h3>
+                <p>Let AI trade for you. Configure strategy, risk per trade, and max concurrent trades. The bot runs 24/7 with real-time performance tracking.</p>
+            </div>
+            <!-- Step 5 -->
+            <div class="tutorial-step" data-step="4">
+                <div class="tutorial-icon"><i class="fas fa-brain"></i></div>
+                <h3>AI Assistant</h3>
+                <p>Click the robot icon <i class="fas fa-robot" style="color:var(--accent-cyan)"></i> at the bottom-right to ask questions, get trade signals, market analysis, and risk advice.</p>
+            </div>
+            <!-- Step 6 -->
+            <div class="tutorial-step" data-step="5">
+                <div class="tutorial-icon"><i class="fas fa-graduation-cap"></i></div>
+                <h3>Video Tutorials</h3>
+                <p>Watch step-by-step video guides on each feature. Find them on the Dashboard, Bot Trading, and Indian Market pages.</p>
+            </div>
+        </div>
+        <div class="tutorial-footer">
+            <button class="btn-outline" onclick="prevTutorialStep()" id="tutorialPrev" style="display:none"><i class="fas fa-arrow-left"></i> Back</button>
+            <button class="btn-primary" onclick="nextTutorialStep()" id="tutorialNext">Next <i class="fas fa-arrow-right"></i></button>
+            <button class="btn-success" onclick="finishTutorial()" id="tutorialFinish" style="display:none"><i class="fas fa-check"></i> Get Started</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.tutorial-overlay{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center}
+.tutorial-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px)}
+.tutorial-card{position:relative;background:var(--card-bg,#1a1f2e);border:1px solid var(--border-color,#2a2f3e);border-radius:16px;padding:0;width:90%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,0.5)}
+.tutorial-header{display:flex;align-items:center;justify-content:space-between;padding:20px 24px 0}
+.tutorial-steps{display:flex;gap:8px}
+.tutorial-dot{width:10px;height:10px;border-radius:50%;background:var(--border-color,#2a2f3e);transition:all .3s}
+.tutorial-dot.active{background:var(--accent-cyan,#00C2FF);box-shadow:0 0 8px var(--accent-cyan,#00C2FF)}
+.tutorial-skip{background:none;border:none;color:var(--text-muted,#888);cursor:pointer;font-size:14px;padding:4px 8px;border-radius:6px}
+.tutorial-skip:hover{color:var(--text-primary,#fff);background:rgba(255,255,255,0.05)}
+.tutorial-body{padding:32px 24px;min-height:200px}
+.tutorial-step{display:none;text-align:center}
+.tutorial-step.active{display:block;animation:fadeIn .3s ease}
+.tutorial-icon{width:72px;height:72px;margin:0 auto 20px;border-radius:50%;background:linear-gradient(135deg,var(--accent-cyan,#00C2FF),var(--accent-green,#00E676));display:flex;align-items:center;justify-content:center;font-size:30px;color:#fff}
+.tutorial-step h3{font-size:20px;font-weight:600;margin-bottom:12px;color:var(--text-primary,#fff)}
+.tutorial-step p{font-size:15px;line-height:1.6;color:var(--text-secondary,#aaa);max-width:380px;margin:0 auto}
+.tutorial-footer{display:flex;justify-content:space-between;padding:16px 24px 24px}
+</style>
+
+<script>
+let tutorialStep = 0;
+const totalTutorialSteps = 6;
+
+function showTutorial() {
+    const overlay = document.getElementById('tutorialOverlay');
+    if (overlay) overlay.style.display = 'flex';
+}
+
+function hideTutorial() {
+    const overlay = document.getElementById('tutorialOverlay');
+    if (overlay) overlay.style.display = 'none';
+}
+
+function updateTutorial() {
+    document.querySelectorAll('.tutorial-step').forEach((el,i)=>{
+        el.classList.toggle('active', i===tutorialStep);
+    });
+    document.querySelectorAll('.tutorial-dot').forEach((el,i)=>{
+        el.classList.toggle('active', i===tutorialStep);
+    });
+    document.getElementById('tutorialPrev').style.display = tutorialStep === 0 ? 'none' : '';
+    document.getElementById('tutorialNext').style.display = tutorialStep < totalTutorialSteps-1 ? '' : 'none';
+    document.getElementById('tutorialFinish').style.display = tutorialStep === totalTutorialSteps-1 ? '' : 'none';
+}
+
+function nextTutorialStep() {
+    if (tutorialStep < totalTutorialSteps - 1) { tutorialStep++; updateTutorial(); }
+}
+
+function prevTutorialStep() {
+    if (tutorialStep > 0) { tutorialStep--; updateTutorial(); }
+}
+
+function skipTutorial() {
+    hideTutorial();
+    fetch('/api/user/tutorial-complete', {method:'POST'}).catch(()=>{});
+}
+
+function finishTutorial() {
+    hideTutorial();
+    fetch('/api/user/tutorial-complete', {method:'POST'}).catch(()=>{});
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('/api/user/tutorial-status').then(r=>r.json()).then(data=>{
+        if (!data.completed) {
+            setTimeout(showTutorial, 600);
+        }
+    }).catch(()=>{});
+});
+</script>

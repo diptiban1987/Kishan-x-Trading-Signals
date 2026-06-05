@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - {{ platform_name }}</title>
+    <!-- Removed external CDNs to prevent long timeout on restricted networks
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    -->
+    <style>
+        :root {
+            --bg-primary: #0A0F1E;
+            --bg-card: #1A2238;
+            --accent-blue: #00C2FF;
+            --accent-green: #00E676;
+            --accent-red: #FF4D4F;
+            --text-primary: #F9FAFB;
+            --text-secondary: #94A3B8;
+            --text-muted: #64748B;
+            --border-color: rgba(255,255,255,0.08);
+            --font-family: 'Inter', 'Segoe UI', sans-serif;
+            --radius-lg: 16px;
+            --radius-sm: 6px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; }
+        body {
+            font-family: var(--font-family);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            position: relative;
+            overflow: hidden;
+        }
+        body::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 50%, rgba(0, 194, 255, 0.05) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 50%, rgba(0, 230, 118, 0.03) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        .auth-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 40px 36px;
+            max-width: 400px;
+            width: 90%;
+            position: relative;
+            z-index: 1;
+            animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .auth-logo {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            display: block;
+            margin: 0 auto 16px;
+            object-fit: cover;
+        }
+        .auth-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            text-align: center;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        .auth-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-bottom: 28px;
+        }
+        .auth-card h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .error {
+            color: var(--accent-red);
+            background: rgba(255, 77, 79, 0.1);
+            border: 1px solid rgba(255, 77, 79, 0.2);
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 16px;
+            font-size: 0.85rem;
+            text-align: center;
+            animation: shake 0.4s ease-in-out;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            75% { transform: translateX(4px); }
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px 14px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-group input:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(0, 194, 255, 0.15);
+        }
+        .form-group input::placeholder {
+            color: var(--text-muted);
+        }
+        .btn-primary {
+            width: 100%;
+            padding: 13px;
+            background: linear-gradient(135deg, var(--accent-blue), #0099CC);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: var(--font-family);
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 4px;
+        }
+        .btn-primary:hover {
+            box-shadow: 0 0 30px rgba(0, 194, 255, 0.3);
+            transform: translateY(-1px);
+        }
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+        .auth-link {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        .auth-link a {
+            color: var(--accent-blue);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .auth-link a:hover {
+            text-decoration: underline;
+        }
+        .subscription-message {
+            margin-top: 20px;
+            padding: 16px;
+            background: rgba(0, 194, 255, 0.05);
+            border: 1px solid rgba(0, 194, 255, 0.15);
+            border-radius: var(--radius-sm);
+            text-align: center;
+        }
+        .subscription-message p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+        .upgrade-btn {
+            display: inline-block;
+            padding: 8px 20px;
+            background: linear-gradient(135deg, var(--accent-green), #00C853);
+            color: #000;
+            text-decoration: none;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+        .upgrade-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 0 20px rgba(0, 230, 118, 0.3);
+        }
+        
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+        .modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+        .modal-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 30px;
+            max-width: 450px;
+            width: 90%;
+            position: relative;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+        .modal-close {
+            position: absolute;
+            top: 15px; right: 15px;
+            background: none; border: none;
+            color: var(--text-secondary);
+            font-size: 1.2rem; cursor: pointer;
+            transition: color 0.2s;
+        }
+        .modal-close:hover { color: var(--text-primary); }
+        .modal-title {
+            font-size: 1.4rem; font-weight: 700; margin-bottom: 15px; color: var(--text-primary);
+            display: flex; align-items: center; gap: 10px;
+        }
+        .modal-title i { color: var(--accent-blue); }
+        .modal-body {
+            font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 25px;
+        }
+        .modal-body ul {
+            list-style: none; padding-left: 0; margin-top: 15px;
+            background: rgba(255,255,255,0.02); border-radius: var(--radius-sm); padding: 15px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .modal-body ul li {
+            margin-bottom: 12px; position: relative; padding-left: 28px; color: var(--text-primary);
+        }
+        .modal-body ul li:last-child { margin-bottom: 0; }
+        .modal-body ul li i {
+            position: absolute; left: 0; top: 4px; color: var(--accent-green); font-size: 1.1rem;
+        }
+        
+        @media (max-width: 480px) {
+            .auth-card {
+                padding: 28px 20px;
+                width: 95%;
+            }
+            .auth-logo {
+                width: 44px;
+                height: 44px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-card">
+        <img src="{{ url_for('static', filename=get_setting('platform_logo')) }}" alt="{{ platform_name }} Logo" class="auth-logo">
+        <div class="auth-title">{{ platform_name }}</div>
+        <div class="auth-subtitle">AI-Powered Trading Platform</div>
+        <h2>Welcome Back</h2>
+        {% if error %}<p class="error">{{ error }}</p>{% endif %}
+        <form method="POST" action="{{ url_for('login') }}">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" placeholder="Enter your username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" placeholder="Enter your password" required>
+            </div>
+            <button type="submit" class="btn-primary"><i class="fas fa-sign-in-alt" style="margin-right:6px;"></i> Login</button>
+        </form>
+        <p class="auth-link">Don't have an account? <a href="{{ url_for('register') }}">Register</a></p>
+        <div class="subscription-message">
+            <p>✨ Unlock premium AI-powered trading signals and features.</p>
+            <a href="#" onclick="showUpgradeModal(); return false;" class="upgrade-btn">Upgrade Now</a>
+        </div>
+    </div>
+
+    <!-- Upgrade Modal -->
+    <div class="modal-overlay" id="upgradeModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeUpgradeModal()"><i class="fas fa-times"></i></button>
+            <div class="modal-title"><i class="fas fa-crown"></i> Premium Features</div>
+            <div class="modal-body">
+                <p>Unlock the full power of our AI-Powered Trading Platform with a Premium Subscription.</p>
+                <ul>
+                    <li><i class="fas fa-check-circle"></i> <strong>Live Trading Signals:</strong> Access real-time buy/sell signals.</li>
+                    <li><i class="fas fa-robot"></i> <strong>Auto-Trading Bot:</strong> Automate your trades seamlessly.</li>
+                    <li><i class="fas fa-chart-line"></i> <strong>Advanced Analytics:</strong> Get deeper insights into market trends.</li>
+                    <li><i class="fas fa-headset"></i> <strong>Priority Support:</strong> 24/7 assistance from our trading experts.</li>
+                </ul>
+            </div>
+            <button class="btn-primary" onclick="proceedToUpgrade()"><i class="fas fa-arrow-right" style="margin-right:8px;"></i>Proceed to Upgrade</button>
+        </div>
+    </div>
+
+    <script>
+        function showUpgradeModal() {
+            document.getElementById('upgradeModal').classList.add('active');
+        }
+        
+        function closeUpgradeModal() {
+            document.getElementById('upgradeModal').classList.remove('active');
+        }
+        
+        function proceedToUpgrade() {
+            alert("To upgrade you have to log in, or if you have no account yet, please register.");
+            closeUpgradeModal();
+            document.getElementById('username').focus();
+        }
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            var modal = document.getElementById('upgradeModal');
+            if (event.target == modal) {
+                closeUpgradeModal();
+            }
+        }
+        
+        // Handle Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === "Escape") {
+                closeUpgradeModal();
+            }
+        });
+    </script>
+</body>
+</html>

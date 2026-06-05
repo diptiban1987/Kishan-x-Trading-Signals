@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+{% block title %}{{ platform_name }} - Profile{% endblock %}
+{% block content %}
+<div style="max-width:900px;margin:0 auto;padding:0 16px 40px">
+
+    <!-- Profile Header Card -->
+    <div class="chart-card" style="margin-bottom:24px">
+        <div style="display:flex;align-items:center;gap:20px;padding:24px;flex-wrap:wrap">
+            <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--accent-cyan),var(--accent-blue));display:flex;align-items:center;justify-content:center;font-size:28px;color:#fff;flex-shrink:0">
+                <i class="fas fa-user"></i>
+            </div>
+            <div style="flex:1;min-width:150px">
+                <h2 style="margin:0;font-size:22px">{{ user.username if user else 'Trader' }}</h2>
+                <div style="color:var(--text-secondary);font-size:14px;margin-top:4px">
+                    <span class="badge {{ 'badge-success' if user and user.get('is_premium') else 'badge-info' }}">
+                        {{ 'Premium' if user and user.get('is_premium') else 'Free' }}
+                    </span>
+                    <span style="margin-left:12px"><i class="fas fa-calendar-alt"></i> Since {{ member_since if member_since else '2024' }}</span>
+                </div>
+            </div>
+            <div style="display:flex;gap:16px;flex-wrap:wrap">
+                <div style="text-align:center;padding:8px 16px;background:var(--bg-dark);border-radius:8px">
+                    <div style="font-size:20px;font-weight:700">{{ total_signals if total_signals else '0' }}</div>
+                    <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase">Signals</div>
+                </div>
+                <div style="text-align:center;padding:8px 16px;background:var(--bg-dark);border-radius:8px">
+                    <div style="font-size:20px;font-weight:700">{{ success_rate if success_rate else '0' }}%</div>
+                    <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase">Success</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+        <!-- Left Column: Password + 2FA -->
+        <div>
+            <!-- Change Password -->
+            <div class="chart-card" style="margin-bottom:24px">
+                <div class="card-header"><h3><i class="fas fa-key"></i> Change Password</h3></div>
+                <form method="POST" style="padding:16px">
+                    <div class="form-group">
+                        <label>New Password</label>
+                        <input type="password" name="new_password" class="form-control" minlength="6" required>
+                    </div>
+                    <button type="submit" class="btn-primary" style="width:100%"><i class="fas fa-save"></i> Update Password</button>
+                </form>
+            </div>
+
+            <!-- 2FA Section -->
+            <div class="chart-card">
+                <div class="card-header"><h3><i class="fas fa-shield-alt"></i> Two-Factor Auth</h3></div>
+                <div style="padding:16px" id="twofaSection">
+                    <div id="twofaStatus">
+                        {% if twofa_enabled %}
+                            <div class="alert alert-success" style="margin-bottom:16px"><i class="fas fa-check-circle"></i> 2FA is <strong>enabled</strong></div>
+                            <button class="btn-danger" style="width:100%" onclick="showDisable2FA()"><i class="fas fa-times"></i> Disable 2FA</button>
+                            <hr style="border-color:var(--border-color);margin:16px 0">
+                            <button class="btn-outline" style="width:100%" onclick="showRecoveryCodes()"><i class="fas fa-list"></i> View Recovery Codes</button>
+                        {% else %}
+                            <div class="alert alert-info" style="margin-bottom:16px"><i class="fas fa-info-circle"></i> 2FA is <strong>disabled</strong></div>
+                            <button class="btn-primary" style="width:100%" onclick="setup2FA()"><i class="fas fa-qrcode"></i> Enable 2FA</button>
+                        {% endif %}
+                    </div>
+                    <div id="twofaSetup" style="display:none;text-align:center">
+                        <p style="color:var(--text-secondary);margin-bottom:12px">Scan this QR code with Google Authenticator or Authy:</p>
+                        <div id="twofaQR" style="margin:0 auto 16px;width:200px;height:200px;background:var(--bg-dark);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text-muted)">Loading...</div>
+                        <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Or enter this key manually: <code id="twofaSecret" style="background:var(--bg-dark);padding:2px 6px;border-radius:4px;user-select:all"></code></div>
+                        <div class="form-group">
+                            <input type="text" class="form-control" id="twofaCode" placeholder="Enter 6-digit code" maxlength="6" inputmode="numeric" style="text-align:center;font-size:20px;letter-spacing:6px;font-family:monospace">
+                        </div>
+                        <div style="display:flex;gap:8px">
+                            <button class="btn-outline" style="flex:1" onclick="cancel2FASetup()">Cancel</button>
+                            <button class="btn-success" style="flex:1" onclick="verify2FA()">Verify & Enable</button>
+                        </div>
+                        <p id="twofaError" style="color:var(--accent-red);font-size:13px;margin-top:8px;display:none"></p>
+                    </div>
+                    <div id="twofaDisable" style="display:none">
+                        <p style="color:var(--text-secondary);margin-bottom:12px">Enter your password to disable 2FA:</p>
+                        <div class="form-group">
+                            <input type="password" class="form-control" id="twofaDisablePassword" placeholder="Current password">
+                        </div>
+                        <div style="display:flex;gap:8px">
+                            <button class="btn-outline" style="flex:1" onclick="cancelDisable2FA()">Cancel</button>
+                            <button class="btn-danger" style="flex:1" onclick="disable2FA()">Disable 2FA</button>
+                        </div>
+                        <p id="twofaDisableError" style="color:var(--accent-red);font-size:13px;margin-top:8px;display:none"></p>
+                    </div>
+                    <div id="twofaRecovery" style="display:none">
+                        <p style="color:var(--text-secondary);margin-bottom:12px">Store these recovery codes in a safe place. Each can be used once to log in if you lose access to your authenticator app.</p>
+                        <div id="recoveryCodesList" style="background:var(--bg-dark);border-radius:8px;padding:16px;font-family:monospace;font-size:14px;margin-bottom:12px"></div>
+                        <div style="display:flex;gap:8px">
+                            <button class="btn-outline" style="flex:1" onclick="hideRecoveryCodes()">Close</button>
+                            <button class="btn-primary" style="flex:1" onclick="generateNewRecoveryCodes()">Generate New Codes</button>
+                        </div>
+                        <p id="recoveryError" style="color:var(--accent-red);font-size:13px;margin-top:8px;display:none"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Login History -->
+        <div class="chart-card">
+            <div class="card-header">
+                <h3><i class="fas fa-history"></i> Login History</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="premium-table" id="loginHistoryTable">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>IP</th>
+                            <th>Status</th>
+                            <th>Device</th>
+                        </tr>
+                    </thead>
+                    <tbody id="loginHistoryBody">
+                        <tr><td colspan="4" class="text-muted text-center">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ─── 2FA Setup ────────────────────────────────────────────────────────
+
+function setup2FA() {
+    document.getElementById('twofaStatus').style.display = 'none';
+    document.getElementById('twofaSetup').style.display = 'block';
+    document.getElementById('twofaError').style.display = 'none';
+    fetch('/api/2fa/setup').then(r=>r.json()).then(data=>{
+        if (data.error) { showToast(data.error,'danger'); return; }
+        document.getElementById('twofaSecret').textContent = data.secret;
+        // Render QR code using Google Charts API
+        const qrUrl = 'https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl=' + encodeURIComponent(data.provisioning_uri) + '&chld=H|0';
+        document.getElementById('twofaQR').innerHTML = '<img src="' + qrUrl + '" alt="QR Code" style="border-radius:4px" crossorigin="anonymous">';
+    }).catch(()=>showToast('Failed to setup 2FA','danger'));
+}
+
+function verify2FA() {
+    const code = document.getElementById('twofaCode').value.trim();
+    if (!code || code.length < 6) { showToast('Enter a valid 6-digit code','warning'); return; }
+    fetch('/api/2fa/verify', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({code})})
+    .then(r=>r.json()).then(data=>{
+        if (data.error) { document.getElementById('twofaError').textContent = data.error; document.getElementById('twofaError').style.display = 'block'; return; }
+        showToast(data.message || '2FA enabled','success');
+        if (data.recovery_codes) {
+            document.getElementById('recoveryCodesList').innerHTML = data.recovery_codes.map(c=>'<div style="padding:4px 0">🔑 ' + c + '</div>').join('');
+            showRecoveryCodes();
+        }
+        setTimeout(()=>location.reload(), 1000);
+    }).catch(()=>showToast('Verification failed','danger'));
+}
+
+function cancel2FASetup() {
+    document.getElementById('twofaSetup').style.display = 'none';
+    document.getElementById('twofaStatus').style.display = 'block';
+}
+
+// ─── 2FA Disable ──────────────────────────────────────────────────────
+
+function showDisable2FA() {
+    document.getElementById('twofaStatus').style.display = 'none';
+    document.getElementById('twofaDisable').style.display = 'block';
+    document.getElementById('twofaDisableError').style.display = 'none';
+}
+
+function cancelDisable2FA() {
+    document.getElementById('twofaDisable').style.display = 'none';
+    document.getElementById('twofaStatus').style.display = 'block';
+}
+
+function disable2FA() {
+    const password = document.getElementById('twofaDisablePassword').value;
+    if (!password) { showToast('Enter your password','warning'); return; }
+    fetch('/api/2fa/disable', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({password})})
+    .then(r=>r.json()).then(data=>{
+        if (data.error) { document.getElementById('twofaDisableError').textContent = data.error; document.getElementById('twofaDisableError').style.display = 'block'; return; }
+        showToast(data.message || '2FA disabled','info');
+        setTimeout(()=>location.reload(), 1000);
+    }).catch(()=>showToast('Failed to disable 2FA','danger'));
+}
+
+// ─── Recovery Codes ────────────────────────────────────────────────────
+
+function showRecoveryCodes() {
+    document.getElementById('twofaRecovery').style.display = 'block';
+    document.getElementById('twofaStatus').style.display = 'none';
+    // Fetch recovery codes from the server
+    // We'll get them via a simple check
+    fetch('/api/2fa/status').then(r=>r.json()).then(()=>{
+        // We don't have a direct endpoint to view codes, so prompt for password
+        const pwd = prompt('Enter your password to view recovery codes:');
+        if (pwd) {
+            fetch('/api/2fa/recovery-codes', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({password: pwd})})
+            .then(r=>r.json()).then(data=>{
+                if (data.error) { alert(data.error); return; }
+                document.getElementById('recoveryCodesList').innerHTML = data.recovery_codes.map(c=>'<div style="padding:4px 0">🔑 <strong>' + c + '</strong></div>').join('');
+            }).catch(()=>showToast('Failed to load codes','danger'));
+        }
+    });
+}
+
+function hideRecoveryCodes() {
+    document.getElementById('twofaRecovery').style.display = 'none';
+    document.getElementById('twofaStatus').style.display = 'block';
+}
+
+function generateNewRecoveryCodes() {
+    const pwd = prompt('Enter your password to generate new recovery codes:');
+    if (pwd) {
+        fetch('/api/2fa/recovery-codes', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({password: pwd})})
+        .then(r=>r.json()).then(data=>{
+            if (data.error) { alert(data.error); return; }
+            document.getElementById('recoveryCodesList').innerHTML = data.recovery_codes.map(c=>'<div style="padding:4px 0">🔑 <strong>' + c + '</strong></div>').join('');
+            showToast('New recovery codes generated','success');
+        }).catch(()=>showToast('Failed to generate codes','danger'));
+    }
+}
+
+// ─── Login History ─────────────────────────────────────────────────────
+
+function loadLoginHistory() {
+    fetch('/api/user/login-history').then(r=>r.json()).then(data=>{
+        const tbody = document.getElementById('loginHistoryBody');
+        const history = data.history || [];
+        if (!history.length) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-muted text-center">No login history</td></tr>';
+            return;
+        }
+        tbody.innerHTML = history.map(h=>{
+            const d = new Date(h.timestamp);
+            const timeStr = d.toLocaleString();
+            const ua = h.user_agent || '';
+            const device = ua.length > 60 ? ua.substring(0,60)+'…' : ua || 'Unknown';
+            const isNew = h.success && history.indexOf(h) < 1;
+            return `<tr>
+                <td style="white-space:nowrap">${timeStr}</td>
+                <td><code style="background:var(--bg-dark);padding:2px 6px;border-radius:4px;font-size:12px">${h.ip_address||'—'}</code></td>
+                <td><span class="badge ${h.success?'badge-success':'badge-danger'}">${h.success?'Success':'Failed'}</span></td>
+                <td style="font-size:12px;color:var(--text-secondary);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${ua}">${device}</td>
+            </tr>`;
+        }).join('');
+    }).catch(()=>{
+        document.getElementById('loginHistoryBody').innerHTML = '<tr><td colspan="4" class="text-muted text-center">Failed to load</td></tr>';
+    });
+}
+
+document.addEventListener('DOMContentLoaded', loadLoginHistory);
+</script>
+{% endblock %}

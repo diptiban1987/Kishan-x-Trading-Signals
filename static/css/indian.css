@@ -1,0 +1,166 @@
+/* Indian/OTC Market page additions — complements premium.css */
+/* No conflicting base styles - all styling comes from premium.css */
+
+.trading-modal-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999999;
+    padding: 20px;
+    backdrop-filter: blur(4px);
+}
+.trading-modal {
+    background: var(--bg-card, #1A2238);
+    border: 1px solid var(--border-color, rgba(255,255,255,0.08));
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    width: 90%;
+    max-width: 480px;
+    max-height: 80vh;
+    overflow-y: auto;
+    animation: modalFadeIn 0.4s ease-out;
+}
+.trading-modal-header {
+    background: linear-gradient(135deg, #0A0F1E, #1A2238);
+    color: var(--text-primary, #F9FAFB);
+    padding: 24px 20px;
+    position: relative;
+    border-radius: 16px 16px 0 0;
+    border-bottom: 1px solid var(--border-color, rgba(255,255,255,0.08));
+}
+.trading-modal-header h1 {
+    font-size: 1.3rem;
+    margin: 8px 0;
+    font-weight: 700;
+}
+.trading-modal-header p {
+    font-size: 0.85rem;
+    opacity: 0.8;
+    margin: 0;
+}
+.trading-modal-close {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    background: none;
+    border: none;
+    color: var(--text-primary, #F9FAFB);
+    font-size: 1.2rem;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+.trading-modal-close:hover { opacity: 1; }
+.trading-modal-body { padding: 24px 20px; }
+.trading-modal .time-display {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 16px 0;
+    font-family: 'Courier New', monospace;
+    background: var(--bg-primary, #0A0F1E);
+    padding: 12px;
+    border-radius: 10px;
+    color: var(--accent-blue, #00C2FF);
+    text-align: center;
+}
+.trading-modal .date-display {
+    font-size: 0.95rem;
+    color: var(--text-secondary, #94A3B8);
+    margin-bottom: 20px;
+    text-align: center;
+}
+.trading-modal .status-msg {
+    font-size: 1rem;
+    padding: 16px;
+    border-radius: 10px;
+    margin: 16px 0;
+    font-weight: 600;
+    text-align: center;
+}
+.trading-modal .status-msg.trading-open {
+    background: rgba(0,230,118,0.1);
+    color: var(--accent-green, #00E676);
+    border: 1px solid rgba(0,230,118,0.2);
+}
+.trading-modal .status-msg.trading-closed {
+    background: rgba(255,77,79,0.1);
+    color: var(--accent-red, #FF4D4F);
+    border: 1px solid rgba(255,77,79,0.2);
+}
+.trading-modal .trading-hours {
+    display: flex;
+    justify-content: space-between;
+    background: var(--bg-primary, #0A0F1E);
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin: 16px 0;
+    border: 1px solid var(--border-color, rgba(255,255,255,0.08));
+}
+.trading-modal .session { text-align: center; }
+.trading-modal .session-time {
+    font-weight: 700;
+    color: var(--accent-blue, #00C2FF);
+}
+.trading-modal .info-card {
+    background: rgba(0,194,255,0.05);
+    border-left: 3px solid var(--accent-blue, #00C2FF);
+    padding: 12px 16px;
+    text-align: left;
+    margin: 16px 0;
+    border-radius: 8px;
+}
+.trading-modal .info-card h3 {
+    color: var(--accent-blue, #00C2FF);
+    font-size: 0.85rem;
+    margin: 0 0 6px 0;
+    font-weight: 600;
+}
+.trading-modal .info-card p {
+    margin: 4px 0;
+    font-size: 0.8rem;
+    color: var(--text-secondary, #94A3B8);
+}
+.trading-modal .modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin: 20px 0;
+}
+.trading-modal .modal-btn {
+    padding: 10px 22px;
+    border: none;
+    border-radius: 24px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.trading-modal .modal-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+.trading-modal .modal-btn.primary {
+    background: var(--accent-blue, #00C2FF);
+    color: #000;
+}
+.trading-modal .modal-btn.success {
+    background: var(--accent-green, #00E676);
+    color: #000;
+}
+.trading-modal .footer-note {
+    margin: 12px 0;
+    font-size: 0.75rem;
+    color: var(--text-muted, #64748B);
+    text-align: center;
+}
+@keyframes modalFadeIn {
+    from { opacity: 0; transform: translateY(-20px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}

@@ -1,0 +1,38 @@
+# Environment
+.env
+.env.bak
+.flaskenv
+
+# Virtual Environment
+venv_fresh/
+venv/
+__pycache__/
+*.pyc
+
+# Database
+*.db
+*.sqlite
+
+# Logs
+*.log
+server_*.log
+app_debug_output.log
+debug_output.log
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Uploads / Cache
+cache/
+backups/
+scratch/
+
+# Specific temp files
+=
+project_enhancement.txt
+"stop server.txt"

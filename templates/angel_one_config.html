@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block title %}Angel One API - {{ platform_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .config-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    padding: 28px;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  .config-card h2 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+  .config-card p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+  }
+  .form-group {
+    margin-bottom: 16px;
+  }
+  .form-group label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .config-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+  .quick-actions {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .quick-action-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    text-align: center;
+    transition: all var(--transition-fast);
+  }
+  .quick-action-card:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-2px);
+  }
+  .quick-action-card h5 {
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  #api-response {
+    background: #0d1117;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    overflow-x: auto;
+    white-space: pre-wrap;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  #status-alert {
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 16px;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+  .alert-success { background: rgba(0,230,118,0.1); border: 1px solid rgba(0,230,118,0.2); color: var(--accent-green); }
+  .alert-danger { background: rgba(255,77,79,0.1); border: 1px solid rgba(255,77,79,0.2); color: var(--accent-red); }
+  .alert-warning { background: rgba(255,193,7,0.1); border: 1px solid rgba(255,193,7,0.2); color: var(--accent-warning); }
+  .alert-info { background: rgba(0,194,255,0.1); border: 1px solid rgba(0,194,255,0.2); color: var(--accent-blue); }
+  @media (max-width: 600px) {
+    .form-row { grid-template-columns: 1fr; }
+    .quick-actions { grid-template-columns: 1fr; }
+    .config-card { padding: 20px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in" style="max-width:720px;margin:0 auto;">
+  <div class="config-card">
+    <h2><i class="fas fa-link text-blue" style="margin-right:8px;"></i> Angel One API Configuration</h2>
+    <p>Configure your Angel One SmartAPI credentials to enable real-time Indian market trading.</p>
+
+    <div id="status-alert" style="display:none;"></div>
+
+    <form id="angel-one-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="api_key">API Key</label>
+          <input type="text" class="input" id="api_key" name="api_key" placeholder="Enter your API Key" required>
+        </div>
+        <div class="form-group">
+          <label for="client_id">Client ID</label>
+          <input type="text" class="input" id="client_id" name="client_id" placeholder="Enter your Client ID" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" class="input" id="password" name="password" placeholder="Enter your Password" required>
+        </div>
+        <div class="form-group">
+          <label for="totp_secret">TOTP Secret</label>
+          <input type="text" class="input" id="totp_secret" name="totp_secret" placeholder="Enter your TOTP Secret" required>
+        </div>
+      </div>
+
+      <div class="config-actions">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-cog"></i> Configure</button>
+        <button type="button" class="btn btn-ghost" onclick="checkStatus()"><i class="fas fa-info-circle"></i> Check Status</button>
+      </div>
+    </form>
+
+    <hr style="border-color:var(--border-color);margin:24px 0;">
+
+    <h5 style="font-size:0.9rem;font-weight:600;color:var(--text-primary);margin-bottom:12px;">Quick Actions</h5>
+    <div class="quick-actions">
+      <div class="quick-action-card">
+        <h5><i class="fas fa-wallet text-green" style="margin-right:4px;"></i> Account Info</h5>
+        <button class="btn btn-ghost btn-sm w-full" onclick="getFunds()">Get Funds</button>
+      </div>
+      <div class="quick-action-card">
+        <h5><i class="fas fa-briefcase text-blue" style="margin-right:4px;"></i> Holdings</h5>
+        <button class="btn btn-ghost btn-sm w-full" onclick="getHoldings()">Get Holdings</button>
+      </div>
+      <div class="quick-action-card">
+        <h5><i class="fas fa-chart-bar text-warning" style="margin-right:4px;"></i> Positions</h5>
+        <button class="btn btn-ghost btn-sm w-full" onclick="getPositions()">Get Positions</button>
+      </div>
+    </div>
+
+    <div id="api-results" style="display:none;margin-top:16px;">
+      <h5 style="font-size:0.85rem;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">API Response:</h5>
+      <pre id="api-response"></pre>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    checkStatus();
+    document.getElementById('angel-one-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        configureAngelOne();
+    });
+});
+
+function configureAngelOne() {
+    const formData = {
+        api_key: document.getElementById('api_key').value,
+        client_id: document.getElementById('client_id').value,
+        password: document.getElementById('password').value,
+        totp_secret: document.getElementById('totp_secret').value
+    };
+    showAlert('Configuring Angel One API...', 'info');
+    fetch('/api/angel_one/configure', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(formData)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'success') {
+            showAlert('Angel One API configured successfully!', 'success');
+            checkStatus();
+        } else {
+            showAlert('Failed: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => showAlert('Error: ' + error.message, 'danger'));
+}
+
+function checkStatus() {
+    fetch('/api/angel_one/status')
+    .then(r => r.json())
+    .then(data => {
+        let cls = 'info', msg = data.message;
+        if (data.status === 'connected') cls = 'success';
+        else if (data.status === 'demo') cls = 'success';
+        else if (data.status === 'disconnected') cls = 'warning';
+        else if (data.status === 'not_configured') cls = 'info';
+        showAlert(msg, cls);
+    })
+    .catch(e => showAlert('Error checking status: ' + e.message, 'danger'));
+}
+
+function getFunds() { fetchApi('/api/angel_one/funds'); }
+function getHoldings() { fetchApi('/api/angel_one/holdings'); }
+function getPositions() { fetchApi('/api/angel_one/positions'); }
+
+function fetchApi(url) {
+    fetch(url).then(r => r.json()).then(d => showApiResponse(d)).catch(e => showApiResponse({error: e.message}));
+}
+
+function showAlert(message, type) {
+    const el = document.getElementById('status-alert');
+    el.className = 'alert-' + type;
+    el.textContent = message;
+    el.style.display = 'block';
+    setTimeout(() => { el.style.display = 'none'; }, 5000);
+}
+
+function showApiResponse(data) {
+    document.getElementById('api-results').style.display = 'block';
+    document.getElementById('api-response').textContent = JSON.stringify(data, null, 2);
+}
+</script>
+{% endblock %}

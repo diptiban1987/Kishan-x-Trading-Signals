@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}2FA Verification - {{ platform_name }}{% endblock %}
+{% block content %}
+<div class="auth-page">
+    <div class="auth-card" style="max-width:420px;margin:60px auto;text-align:center">
+        <div class="auth-icon" style="width:64px;height:64px;margin:0 auto 20px;border-radius:50%;background:linear-gradient(135deg,var(--accent-cyan),var(--accent-blue));display:flex;align-items:center;justify-content:center;font-size:28px;color:#fff">
+            <i class="fas fa-shield-alt"></i>
+        </div>
+        <h2>Two-Factor Authentication</h2>
+        <p style="color:var(--text-secondary);margin-bottom:24px">Enter the 6-digit code from your authenticator app, or a recovery code.</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }}" style="margin-bottom:16px">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" style="max-width:280px;margin:0 auto">
+            <div class="form-group">
+                <input type="text" name="code" class="form-control" placeholder="000000" maxlength="8" inputmode="numeric" autocomplete="one-time-code" required
+                       style="text-align:center;font-size:28px;letter-spacing:8px;font-weight:600;padding:16px;height:auto;font-family:monospace">
+            </div>
+            <button type="submit" class="btn-primary" style="width:100%;padding:14px;font-size:16px">
+                <i class="fas fa-check-circle"></i> Verify
+            </button>
+        </form>
+
+        <div style="margin-top:20px;font-size:13px;color:var(--text-muted)">
+            <i class="fas fa-info-circle"></i> Lost access? Use a recovery code (8 characters each)
+        </div>
+    </div>
+</div>
+{% endblock %}

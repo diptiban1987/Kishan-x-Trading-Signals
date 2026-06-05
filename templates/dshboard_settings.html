@@ -1,0 +1,22 @@
+{% extends "dashboard.html" %}
+
+{% block content %}
+<div class="animate-fade-in" style="max-width:500px;">
+  <div class="profile-card" style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-xl);padding:28px;">
+    <h2 style="font-size:1.2rem;font-weight:700;color:var(--text-primary);margin-bottom:20px;"><i class="fas fa-cog text-blue" style="margin-right:8px;"></i> User Settings</h2>
+    <div>
+      <div class="detail-row" style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border-color);">
+        <span style="font-size:0.85rem;color:var(--text-secondary);">Username</span>
+        <span style="font-size:0.9rem;font-weight:500;color:var(--text-primary);">{{ user.username if user else 'Guest' }}</span>
+      </div>
+      <div class="detail-row" style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border-color);">
+        <span style="font-size:0.85rem;color:var(--text-secondary);">Member Since</span>
+        <span style="font-size:0.9rem;font-weight:500;color:var(--text-primary);">{{ user.registered_at if user else 'N/A' }}</span>
+      </div>
+    </div>
+    <div style="margin-top:20px;">
+      <a href="{{ url_for('profile') }}" class="btn btn-primary"><i class="fas fa-user"></i> View Profile</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

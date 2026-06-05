@@ -1,0 +1,34 @@
+{% extends "dashboard.html" %}
+
+{% block content %}
+<div class="animate-fade-in">
+  {% if signals %}
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;">
+    {% for signal in signals %}
+    <div class="card" style="padding:16px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        {% if signal.direction == 'CALL' %}
+        <span class="badge badge-green">BUY</span>
+        {% else %}
+        <span class="badge badge-red">SELL</span>
+        {% endif %}
+        <strong style="color:var(--text-primary);font-size:1rem;">{{ signal.pair }}</strong>
+      </div>
+      <div style="font-size:0.8rem;color:var(--text-secondary);">
+        <i class="far fa-clock"></i> {{ signal.created_at }}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state-icon"><i class="fas fa-chart-line"></i></div>
+    <div class="empty-state-title">No Signals</div>
+    <div class="empty-state-desc">No signals available yet. Generate signals to see them here.</div>
+  </div>
+  {% endif %}
+  <div style="margin-top:16px;">
+    <a href="{{ url_for('index') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Generate New Signals</a>
+  </div>
+</div>
+{% endblock %}

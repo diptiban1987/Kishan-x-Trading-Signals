@@ -1,0 +1,365 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+  .dash-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .dash-welcome h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+  }
+  .dash-welcome .sub {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-top: 2px;
+  }
+  .error-msg {
+    background: rgba(255,77,79,0.1);
+    border-left: 3px solid var(--accent-red);
+    color: var(--accent-red);
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 16px;
+  }
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .dash-chart-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+  .dash-chart-card h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+  .dash-table-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .dash-table-card h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+  .dash-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .dash-table th,
+  .dash-table td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.875rem;
+  }
+  .dash-table th {
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .dash-table tbody tr:hover {
+    background: rgba(255,255,255,0.02);
+  }
+  .dash-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 768px) {
+    .dash-grid-2 {
+      grid-template-columns: 1fr;
+    }
+    .stats-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  @media (max-width: 480px) {
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .plan-banner { display:flex; gap:16px; align-items:center; padding:16px 20px; border-radius:12px; margin-bottom:24px; border:1px solid rgba(255,255,255,0.1); }
+  .plan-banner-free { background: rgba(255,255,255,0.03); }
+  .plan-banner-premium { background: linear-gradient(135deg, rgba(0,230,208,0.1), rgba(0,180,216,0.05)); border-color: rgba(0,230,208,0.3); }
+  .plan-banner-pro { background: linear-gradient(135deg, rgba(255,193,7,0.1), rgba(255,152,0,0.05)); border-color: rgba(255,193,7,0.3); }
+  .plan-banner-enterprise { background: linear-gradient(135deg, rgba(156,39,176,0.1), rgba(103,58,183,0.05)); border-color: rgba(156,39,176,0.3); }
+  .plan-banner-icon { font-size: 2rem; }
+  .plan-banner-content h3 { margin:0 0 4px 0; font-size:1.1rem; color:#fff; }
+  .plan-banner-content p { margin:0; font-size:0.9rem; color:var(--text-secondary); line-height:1.4; }
+  .plan-banner-content a { color:#00e6d0; text-decoration:none; font-weight:600; }
+  .plan-banner-content a:hover { text-decoration:underline; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in">
+  {% if error %}
+  <div class="error-msg">{{ error }}</div>
+  {% endif %}
+
+  <div class="dash-header">
+    <div class="dash-welcome">
+      <h1>Welcome, {{ user.username if user else 'Trader' }}</h1>
+      <div class="sub">{{ platform_name }} - Trading Dashboard</div>
+    </div>
+    <div class="flex gap-sm">
+      <span class="badge badge-blue"><i class="fas fa-circle" style="font-size:0.5rem;margin-right:4px;color:var(--accent-green);"></i> Live</span>
+    </div>
+  </div>
+
+  <!-- Subscription Plan Banner -->
+  <div class="plan-banner plan-banner-{{ user_plan|default('free') }}">
+    <div class="plan-banner-icon">
+        {% if user_plan == 'premium' %}⭐{% elif user_plan == 'pro' %}🚀{% elif user_plan == 'enterprise' %}👑{% else %}🆓{% endif %}
+    </div>
+    <div class="plan-banner-content">
+        <h3>
+            {% if user_plan == 'premium' %}Premium Plan Active{% elif user_plan == 'pro' %}Pro Plan Active{% elif user_plan == 'enterprise' %}Enterprise Plan Active{% else %}Free Plan{% endif %}
+        </h3>
+        <p>
+            {% if user_plan == 'premium' %}
+                You are enjoying unlimited AI signals, auto-trading access, and real-time data. Keep dominating the markets!
+            {% elif user_plan == 'pro' %}
+                You have the ultimate professional suite. Build custom strategies and utilize multiple auto-trade bots.
+            {% elif user_plan == 'enterprise' %}
+                You are on our institutional Enterprise plan. Enjoy dedicated, unlimited access to advanced model training, full APIs, custom white-label solutions, and priority 24/7 dedicated support.
+            {% else %}
+                You are on the basic free plan. <a href="{{ url_for('subscription') }}">Upgrade to Premium</a> to unlock auto-trading, unlimited AI signals, and real-time market data.
+            {% endif %}
+        </p>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-label">Total Signals</div><div class="stat-value text-blue">{{ signals|length if signals else 0 }}</div></div>
+    <div class="stat-card"><div class="stat-label">Active Trades</div><div class="stat-value">{{ trades|length if trades else 0 }}</div></div>
+    <div class="stat-card"><div class="stat-label">Open Positions</div><div class="stat-value">{{ positions|length if positions else 0 }}</div></div>
+    <div class="stat-card"><div class="stat-label">Portfolio Value</div><div class="stat-value" id="portfolio-value">$0.00</div></div>
+    <div class="stat-card"><div class="stat-label">Today's P&amp;L</div><div class="stat-value" id="todays-pnl">$0.00</div></div>
+  </div>
+
+  <div class="dash-grid-2">
+    <div class="dash-chart-card">
+      <h3>Performance Overview</h3>
+      <div style="height:300px;position:relative;">
+        <canvas id="performanceChart"></canvas>
+      </div>
+    </div>
+    <div class="dash-chart-card">
+      <h3>Market Overview</h3>
+      <div id="market-overview-content" style="height:300px;overflow-y:auto;">
+        <div class="empty-state" style="padding:24px;">
+          <div class="loading-spinner"></div>
+          <div class="empty-state-desc" style="margin-top:12px;">Loading market data...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-grid-2">
+    <div class="dash-table-card">
+      <h3>Portfolio Summary</h3>
+      <div id="portfolio-summary-content">
+        <div class="empty-state" style="padding:24px;">
+          <div class="empty-state-icon"><i class="fas fa-wallet"></i></div>
+          <div class="empty-state-title">Loading...</div>
+        </div>
+      </div>
+    </div>
+    <div class="dash-table-card">
+      <h3>Quick Actions</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <a href="{{ url_for('index') }}" class="btn btn-primary"><i class="fas fa-chart-line"></i> Forex</a>
+        <a href="{{ url_for('indian_market') }}" class="btn btn-success"><i class="fas fa-rupee-sign"></i> Indian</a>
+        <a href="{{ url_for('otc_market') }}" class="btn btn-ghost"><i class="fas fa-exchange-alt"></i> OTC</a>
+        <a href="{{ url_for('subscription') }}" class="btn btn-ghost"><i class="fas fa-crown"></i> Plans</a>
+      </div>
+    </div>
+  </div>
+
+    <div class="dash-table-card">
+      <h3>Order Panel</h3>
+      <div style="max-width:480px;">
+        {% include '_order_form.html' %}
+      </div>
+      <div style="margin-top:16px;border-top:1px solid var(--border-color);padding-top:12px;">
+        <h4 style="font-size:0.85rem;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">Recent Orders</h4>
+        {% include '_orders_list.html' %}
+      </div>
+    </div>
+
+  <div class="dash-table-card">
+    <h3>Recent Signals</h3>
+    {% if signals %}
+    <div style="overflow-x:auto;">
+      <table class="dash-table">
+        <thead><tr><th>Time</th><th>Pair</th><th>Direction</th><th>Confidence</th><th>Entry</th><th>Stop Loss</th><th>Take Profit</th></tr></thead>
+        <tbody>
+          {% for signal in signals %}
+          <tr>
+            <td>{{ signal.time|default('N/A') }}</td>
+            <td>{{ signal.pair|default('N/A') }}</td>
+            <td>{% if signal.direction == 'CALL' %}<span class="badge badge-green">BUY</span>{% else %}<span class="badge badge-red">SELL</span>{% endif %}</td>
+            <td class="font-semibold">{{ "%.1f"|format(signal.confidence) if signal.confidence else 'N/A' }}%</td>
+            <td>{{ "%.5f"|format(signal.entry_price) if signal.entry_price else 'N/A' }}</td>
+            <td>{{ "%.5f"|format(signal.stop_loss) if signal.stop_loss else 'N/A' }}</td>
+            <td>{{ "%.5f"|format(signal.take_profit) if signal.take_profit else 'N/A' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-state-icon"><i class="fas fa-chart-line"></i></div>
+      <div class="empty-state-title">No Recent Signals</div>
+      <div class="empty-state-desc">Signals will appear here once generated.</div>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if trades %}
+  <div class="dash-table-card">
+    <h3>Recent Trades</h3>
+    <div style="overflow-x:auto;">
+      <table class="dash-table">
+        <thead><tr><th>Symbol</th><th>Direction</th><th>Entry</th><th>Exit</th><th>Qty</th><th>Status</th><th>P&amp;L</th></tr></thead>
+        <tbody>
+          {% for trade in trades %}
+          <tr>
+            <td class="font-semibold">{{ trade.symbol|default('N/A') }}</td>
+            <td>{% if trade.direction == 'CALL' %}<span class="badge badge-green">BUY</span>{% else %}<span class="badge badge-red">SELL</span>{% endif %}</td>
+            <td>{{ "%.5f"|format(trade.entry_price) if trade.entry_price else 'N/A' }}</td>
+            <td>{{ "%.5f"|format(trade.exit_price) if trade.exit_price else 'N/A' }}</td>
+            <td>{{ "%.2f"|format(trade.quantity) if trade.quantity else 'N/A' }}</td>
+            <td><span class="badge badge-blue">{{ trade.status|default('N/A') }}</span></td>
+            <td class="font-semibold {% if trade.profit_loss and trade.profit_loss >= 0 %}text-green{% else %}text-red{% endif %}">{{ "%.2f"|format(trade.profit_loss) if trade.profit_loss else 'N/A' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const ctx = document.getElementById('performanceChart');
+  if (ctx) {
+    let labels = ['--'], data = [0];
+    try {
+      const history = {{ (portfolio_history or [])|tojson }};
+      if (history && history.length) {
+        labels = history.map(h => String(h.timestamp).split(' ')[0]).reverse();
+        data = history.map(h => h.portfolio_value).reverse();
+      }
+    } catch(e) {}
+    new Chart(ctx.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Portfolio Value',
+          data: data,
+          borderColor: '#00C2FF',
+          backgroundColor: 'rgba(0, 194, 255, 0.1)',
+          tension: 0.4,
+          fill: true,
+          pointRadius: 3,
+          pointBackgroundColor: '#00C2FF'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94A3B8' } },
+          x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94A3B8' } }
+        }
+      }
+    });
+  }
+  fetch('/portfolio/summary').then(r => r.json()).then(d => {
+    const pv = document.getElementById('portfolio-value');
+    const tp = document.getElementById('todays-pnl');
+    if (pv && d.portfolio_value !== undefined) pv.textContent = '$' + Number(d.portfolio_value || 0).toFixed(2);
+    if (tp && d.today_pnl !== undefined) {
+      const v = Number(d.today_pnl || 0);
+      tp.textContent = '$' + v.toFixed(2);
+      tp.style.color = v >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+    }
+    const ps = document.getElementById('portfolio-summary-content');
+    if (ps) {
+      ps.innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="stat-card"><div class="stat-label">Portfolio Value</div><div class="stat-value${d.portfolio_value >= 0 ? ' text-green' : ' text-red'}">$${Number(d.portfolio_value || 0).toFixed(2)}</div></div>
+          <div class="stat-card"><div class="stat-label">Today's P&amp;L</div><div class="stat-value${d.today_pnl >= 0 ? ' text-green' : ' text-red'}">$${Number(d.today_pnl || 0).toFixed(2)}</div></div>
+          <div class="stat-card"><div class="stat-label">Win Rate</div><div class="stat-value text-blue">${d.win_rate ? Number(d.win_rate).toFixed(1) + '%' : 'N/A'}</div></div>
+          <div class="stat-card"><div class="stat-label">Total Trades</div><div class="stat-value">${d.total_trades || 0}</div></div>
+        </div>
+      `;
+    }
+  }).catch(() => {});
+  fetch('/api/market-status').then(r => r.json()).then(d => {
+    const mc = document.getElementById('market-overview-content');
+    if (mc) {
+      const status = d.market_open ? 'Open' : 'Closed';
+      const statusColor = d.market_open ? 'var(--accent-green)' : 'var(--accent-red)';
+      mc.innerHTML = `
+        <div style="padding:4px;">
+          <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-color);">
+            <span style="color:var(--text-secondary);">Market</span>
+            <span style="font-weight:600;color:${statusColor};">${status}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-color);">
+            <span style="color:var(--text-secondary);">Time (IST)</span>
+            <span style="font-weight:600;">${d.current_time || 'N/A'}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-color);">
+            <span style="color:var(--text-secondary);">Date</span>
+            <span style="font-weight:600;">${d.current_date || 'N/A'}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:10px 0;">
+            <span style="color:var(--text-secondary);">Hours</span>
+            <span style="font-weight:600;">${d.market_hours ? d.market_hours.open + ' - ' + d.market_hours.close : 'N/A'}</span>
+          </div>
+        </div>
+      `;
+    }
+  }).catch(() => {
+    const mc = document.getElementById('market-overview-content');
+    if (mc) mc.innerHTML = '<div class="empty-state" style="padding:24px;"><div class="empty-state-icon"><i class="fas fa-exclamation-triangle text-red"></i></div><div class="empty-state-title">Unavailable</div><div class="empty-state-desc">Could not load market data.</div></div>';
+  });
+});
+</script>
+
+<div class="chart-card" style="margin-top:24px">
+    {% include '_video_tutorials.html' %}
+</div>
+{% endblock %}

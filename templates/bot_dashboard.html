@@ -1,0 +1,338 @@
+{% extends "base.html" %}
+{% block title %}Bot Trading - {{ platform_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <h1><i class="fas fa-robot"></i> Auto-Trading Bot</h1>
+        <p class="page-description">Manage your automated trading strategy</p>
+    </div>
+</div>
+
+<div class="container" style="max-width:1400px;margin:0 auto;padding:0 20px 40px">
+
+    <!-- Status Banner -->
+    <div class="bot-status-banner" id="botStatusBanner">
+        <div class="bot-status-icon"><i class="fas fa-power-off"></i></div>
+        <div class="bot-status-info">
+            <div class="bot-status-label">Bot Status</div>
+            <div class="bot-status-value" id="botStatusText">Checking...</div>
+        </div>
+        <div class="bot-status-actions" id="botActions">
+            <button class="btn-success" id="btnStartBot" onclick="startBot()"><i class="fas fa-play"></i> Start</button>
+            <button class="btn-danger" id="btnStopBot" onclick="stopBot()" style="display:none"><i class="fas fa-stop"></i> Stop</button>
+        </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin-bottom:24px" id="botStats">
+        <div class="stat-card">
+            <div class="stat-label">Active Trades</div>
+            <div class="stat-value" id="statActiveTrades">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Total Trades</div>
+            <div class="stat-value" id="statTotalTrades">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Win Rate</div>
+            <div class="stat-value" id="statWinRate">0%</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Total P&L</div>
+            <div class="stat-value" id="statTotalPnl">0.00</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Balance</div>
+            <div class="stat-value" id="statBalance">0.00</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Uptime</div>
+            <div class="stat-value" id="statUptime">N/A</div>
+        </div>
+    </div>
+
+    <!-- Active Trades -->
+    <div class="chart-card" style="margin-bottom:24px">
+        <div class="card-header">
+            <h3><i class="fas fa-tasks"></i> Active Trades</h3>
+        </div>
+        <div class="table-responsive">
+            <table class="premium-table" id="activeTradesTable">
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Direction</th>
+                        <th>Qty</th>
+                        <th>Entry</th>
+                        <th>Current</th>
+                        <th>P&L</th>
+                        <th>P&L %</th>
+                        <th>Duration</th>
+                    </tr>
+                </thead>
+                <tbody id="activeTradesBody">
+                    <tr><td colspan="8" class="text-muted text-center">No active trades</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Config Panel + Trade History -->
+    <div style="display:grid;grid-template-columns:1fr 2fr;gap:24px;margin-bottom:24px">
+        <!-- Config Panel -->
+        <div class="chart-card">
+            <div class="card-header">
+                <h3><i class="fas fa-sliders-h"></i> Bot Config</h3>
+            </div>
+            <form id="botConfigForm" style="padding:16px">
+                <div class="form-group">
+                    <label>Max Concurrent Trades</label>
+                    <input type="number" class="form-control" name="max_concurrent_trades" min="1" max="20" required>
+                </div>
+                <div class="form-group">
+                    <label>Risk per Trade (%)</label>
+                    <input type="number" class="form-control" name="risk_per_trade" min="0.1" max="50" step="0.1" required>
+                </div>
+                <div class="form-group">
+                    <label>Default SL (%)</label>
+                    <input type="number" class="form-control" name="default_sl_percent" min="0.1" max="50" step="0.1" required>
+                </div>
+                <div class="form-group">
+                    <label>Default TP (%)</label>
+                    <input type="number" class="form-control" name="default_tp_percent" min="0.1" max="100" step="0.1" required>
+                </div>
+                <div class="form-group">
+                    <label>Strategy</label>
+                    <select class="form-control" name="strategy">
+                        <option value="adaptive">Adaptive</option>
+                        <option value="conservative">Conservative</option>
+                        <option value="aggressive">Aggressive</option>
+                        <option value="scalping">Scalping</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-primary" style="width:100%;margin-top:8px"><i class="fas fa-save"></i> Save Config</button>
+            </form>
+            <div class="card-header" style="border-top:1px solid var(--border-color);margin-top:16px">
+                <h3><i class="fas fa-eraser"></i> Reset</h3>
+            </div>
+            <div style="padding:16px;padding-top:8px">
+                <button class="btn-danger" onclick="clearTrades()" style="width:100%"><i class="fas fa-trash"></i> Clear Trade History</button>
+            </div>
+        </div>
+
+        <!-- Trade History -->
+        <div class="chart-card">
+            <div class="card-header">
+                <h3><i class="fas fa-history"></i> Trade History</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="premium-table" id="tradeHistoryTable">
+                    <thead>
+                        <tr>
+                            <th>Symbol</th>
+                            <th>Direction</th>
+                            <th>Qty</th>
+                            <th>Entry</th>
+                            <th>Exit</th>
+                            <th>P&L</th>
+                            <th>Strategy</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tradeHistoryBody">
+                        <tr><td colspan="7" class="text-muted text-center">No trade history</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Simulation Badge -->
+    <div id="simulationBadge" class="text-muted text-center" style="display:none;padding:12px;background:var(--card-bg);border-radius:var(--radius);border:1px solid var(--border-color)">
+        <i class="fas fa-flask"></i> Running in <strong>Simulation Mode</strong> — no real orders will be placed
+    </div>
+</div>
+
+<style>
+.bot-status-banner {
+    display:flex;align-items:center;gap:20px;
+    background:var(--card-bg);border:1px solid var(--border-color);
+    border-radius:var(--radius);padding:20px 24px;margin-bottom:24px;
+}
+.bot-status-icon {
+    width:52px;height:52px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:24px;background:var(--bg-dark);color:var(--text-muted);
+    flex-shrink:0;
+}
+.bot-status-icon.active{background:var(--accent-green);color:#fff}
+.bot-status-info{flex:1}
+.bot-status-label{font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px}
+.bot-status-value{font-size:18px;font-weight:600;color:var(--text-primary)}
+.bot-status-actions{display:flex;gap:8px}
+</style>
+
+<script>
+let refreshInterval;
+
+function getStatus() {
+    fetch('/api/bot/status').then(r=>r.json()).then(data=>{
+        const running = data.running;
+        const icon = document.querySelector('.bot-status-icon');
+        icon.className = 'bot-status-icon' + (running?' active':'');
+        icon.innerHTML = running ? '<i class="fas fa-play"></i>' : '<i class="fas fa-pause"></i>';
+        document.getElementById('botStatusText').textContent = running ? 'Running' : 'Stopped';
+        document.getElementById('botStatusText').style.color = running ? 'var(--accent-green)' : 'var(--text-muted)';
+        document.getElementById('btnStartBot').style.display = running ? 'none' : '';
+        document.getElementById('btnStopBot').style.display = running ? '' : 'none';
+        document.getElementById('statActiveTrades').textContent = data.active_trades;
+        document.getElementById('statTotalTrades').textContent = data.total_trades;
+        document.getElementById('statWinRate').textContent = data.win_rate + '%';
+        const pnl = data.total_pnl;
+        const pnlEl = document.getElementById('statTotalPnl');
+        pnlEl.textContent = (pnl>=0?'+':'') + pnl.toFixed(2);
+        pnlEl.style.color = pnl>=0 ? 'var(--accent-green)' : 'var(--accent-red)';
+        document.getElementById('statBalance').textContent = data.balance.toFixed(2);
+        document.getElementById('statUptime').textContent = data.uptime || 'N/A';
+        document.getElementById('simulationBadge').style.display = data.simulation ? '' : 'none';
+    }).catch(()=>{});
+}
+
+function getActiveTrades() {
+    fetch('/indian_status?format=json').then(r=>r.json()).then(d=>{
+        const tbody = document.getElementById('activeTradesBody');
+        const trades = d.trades || [];
+        if (!trades.length) {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-muted text-center">No active trades</td></tr>';
+            return;
+        }
+        tbody.innerHTML = trades.map(t=>{
+            const dir = (t.type||'BUY').toUpperCase();
+            const pnl = t.pnl||0;
+            const pnlPct = t.pnl_percentage||0;
+            return `<tr>
+                <td><strong>${t.symbol||'N/A'}</strong></td>
+                <td><span class="badge ${dir==='BUY'?'badge-success':'badge-danger'}">${dir}</span></td>
+                <td>${t.quantity||0}</td>
+                <td>${t.entry_price||'—'}</td>
+                <td>${t.current_price||'—'}</td>
+                <td style="color:${pnl>=0?'var(--accent-green)':'var(--accent-red)'}">${pnl>=0?'+':''}${pnl.toFixed(2)}</td>
+                <td style="color:${pnlPct>=0?'var(--accent-green)':'var(--accent-red)'}">${pnlPct>=0?'+':''}${pnlPct.toFixed(2)}%</td>
+                <td>${t.duration||'—'}</td>
+            </tr>`;
+        }).join('');
+    }).catch(()=>{});
+}
+
+function getTradeHistory() {
+    fetch('/api/bot/trades').then(r=>r.json()).then(data=>{
+        const tbody = document.getElementById('tradeHistoryBody');
+        const trades = data.trades || [];
+        if (!trades.length) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-muted text-center">No trade history</td></tr>';
+            return;
+        }
+        tbody.innerHTML = trades.map(t=>{
+            const pnl = parseFloat(t.pnl_amount||0);
+            const dir = (t.direction||t.type||'BUY').toUpperCase();
+            return `<tr>
+                <td><strong>${t.symbol||'N/A'}</strong></td>
+                <td><span class="badge ${dir==='BUY'?'badge-success':'badge-danger'}">${dir}</span></td>
+                <td>${t.quantity||0}</td>
+                <td>${t.entry_price||'—'}</td>
+                <td>${t.exit_price||'—'}</td>
+                <td style="color:${pnl>=0?'var(--accent-green)':'var(--accent-red)'}">${pnl>=0?'+':''}${pnl.toFixed(2)}</td>
+                <td>${t.strategy||'Auto'}</td>
+            </tr>`;
+        }).join('');
+    }).catch(()=>{});
+}
+
+function getConfig() {
+    fetch('/api/bot/config').then(r=>r.json()).then(data=>{
+        const form = document.getElementById('botConfigForm');
+        form.max_concurrent_trades.value = data.max_concurrent_trades||3;
+        form.risk_per_trade.value = data.risk_per_trade||2;
+        form.default_sl_percent.value = data.default_sl_percent||2;
+        form.default_tp_percent.value = data.default_tp_percent||4;
+        form.strategy.value = data.strategy||'adaptive';
+    }).catch(()=>{});
+}
+
+function startBot() {
+    document.getElementById('btnStartBot').disabled = true;
+    fetch('/api/bot/start',{method:'POST'})
+    .then(r => r.json().then(data => ({status: r.status, data: data})))
+    .then(({status, data}) => {
+        if (status === 403 && data.upgrade_required) {
+            showUpgradePrompt('Auto-Trading Bot', data.required_plan || 'premium');
+            return;
+        }
+        if (data.status === 'started' || !data.error) {
+            showToast(data.message||'Bot started','success');
+            getStatus();
+        } else {
+            showToast('Failed to start bot: ' + data.error, 'danger');
+        }
+    })
+    .catch(e=>showToast('Failed to start bot','danger'))
+    .finally(()=>document.getElementById('btnStartBot').disabled=false);
+}
+
+function showUpgradePrompt(featureName, requiredPlan) {
+    var existing = document.getElementById('upgrade-prompt-modal');
+    if (existing) existing.remove();
+    var overlay = document.createElement('div');
+    overlay.id = 'upgrade-prompt-modal';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(5px);';
+    var planTitle = requiredPlan.charAt(0).toUpperCase() + requiredPlan.slice(1);
+    overlay.innerHTML = '<div style="background:#1A2238;border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:32px;max-width:420px;width:90%;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,0.5);">'
+        + '<div style="font-size:2.5rem;margin-bottom:12px;">🔒</div>'
+        + '<h3 style="color:#F9FAFB;font-size:1.3rem;margin-bottom:8px;">' + featureName + ' Requires ' + planTitle + ' Plan</h3>'
+        + '<p style="color:#94A3B8;font-size:0.9rem;line-height:1.5;margin-bottom:20px;">You are currently on the <strong style="color:#FF6B6B;">Free</strong> plan. Upgrade to <strong style="color:#00E676;">' + planTitle + '</strong> to unlock this feature.</p>'
+        + '<div style="display:flex;gap:10px;justify-content:center;">'
+        + '<a href="/subscription" style="padding:12px 24px;background:linear-gradient(135deg,#00C2FF,#0099CC);color:#fff;border:none;border-radius:8px;font-weight:600;text-decoration:none;font-size:0.95rem;">⚡ View Plans</a>'
+        + '<button onclick="this.closest(\'#upgrade-prompt-modal\').remove()" style="padding:12px 24px;background:rgba(255,255,255,0.06);color:#94A3B8;border:1px solid rgba(255,255,255,0.1);border-radius:8px;cursor:pointer;font-size:0.95rem;">Close</button>'
+        + '</div></div>';
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+}
+
+function stopBot() {
+    document.getElementById('btnStopBot').disabled = true;
+    fetch('/api/bot/stop',{method:'POST'}).then(r=>r.json()).then(d=>{
+        showToast(d.message||'Bot stopped','warning');
+        getStatus();
+    }).catch(e=>showToast('Failed to stop bot','danger'))
+    .finally(()=>document.getElementById('btnStopBot').disabled=false);
+}
+
+function clearTrades() {
+    if (!confirm('Clear all trade history? This cannot be undone.')) return;
+    fetch('/api/bot/clear',{method:'POST'}).then(r=>r.json()).then(d=>{
+        showToast(d.message||'Trade history cleared','info');
+        getTradeHistory();
+        getStatus();
+    }).catch(e=>showToast('Failed to clear trades','danger'));
+}
+
+document.getElementById('botConfigForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    const data = {};
+    new FormData(this).forEach((v,k)=>{data[k]=v});
+    fetch('/api/bot/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+    .then(r=>r.json()).then(d=>{
+        showToast('Configuration saved','success');
+        getConfig();
+    }).catch(e=>showToast('Failed to save config','danger'));
+});
+
+document.addEventListener('DOMContentLoaded', function(){
+    getStatus(); getActiveTrades(); getTradeHistory(); getConfig();
+    refreshInterval = setInterval(()=>{getStatus();getActiveTrades();getTradeHistory()},10000);
+});
+</script>
+
+<div class="chart-card" style="margin-top:24px">
+    {% include '_video_tutorials.html' %}
+</div>
+{% endblock %}

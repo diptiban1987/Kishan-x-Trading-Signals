@@ -1,0 +1,121 @@
+<div class="order-panel">
+  <style>
+    .order-panel { font-size: 0.85rem; }
+    .order-panel .order-type-tabs { display:flex; gap:4px; margin-bottom:12px; }
+    .order-panel .order-type-tab {
+      flex:1; padding:6px 8px; text-align:center; border:1px solid var(--border-color);
+      border-radius:var(--radius-sm); background:transparent; color:var(--text-secondary);
+      cursor:pointer; font-size:0.75rem; font-weight:600; transition:all var(--transition-fast);
+    }
+    .order-panel .order-type-tab.active { background:var(--accent-blue); color:#fff; border-color:var(--accent-blue); }
+    .order-panel .order-type-tab:hover:not(.active) { border-color:var(--border-hover); }
+    .order-panel .order-row { display:flex; gap:8px; margin-bottom:8px; align-items:center; }
+    .order-panel .order-row label { min-width:60px; color:var(--text-muted); font-size:0.75rem; font-weight:500; }
+    .order-panel .order-row input, .order-panel .order-row select {
+      flex:1; padding:6px 10px; background:var(--bg-primary); border:1px solid var(--border-color);
+      border-radius:var(--radius-sm); color:var(--text-primary); font-size:0.8rem;
+    }
+    .order-panel .order-row input:focus, .order-panel .order-row select:focus {
+      outline:none; border-color:var(--accent-blue); box-shadow:0 0 0 2px rgba(0,194,255,0.15);
+    }
+    .order-panel .order-actions { display:flex; gap:8px; margin-top:10px; }
+    .order-panel .order-btn {
+      flex:1; padding:8px; border:none; border-radius:var(--radius-sm); font-weight:700;
+      font-size:0.8rem; cursor:pointer; transition:all var(--transition-fast);
+      display:inline-flex; align-items:center; justify-content:center; gap:4px;
+    }
+    .order-panel .order-btn:active { transform:scale(0.97); }
+    .order-panel .order-btn.buy { background:var(--accent-green); color:#fff; }
+    .order-panel .order-btn.buy:hover { box-shadow:0 2px 10px rgba(0,230,118,0.3); }
+    .order-panel .order-btn.sell { background:var(--accent-red); color:#fff; }
+    .order-panel .order-btn.sell:hover { box-shadow:0 2px 10px rgba(255,77,79,0.3); }
+    .order-panel .order-info { font-size:0.7rem; color:var(--text-muted); margin-top:6px; text-align:center; }
+  </style>
+
+  <div class="order-type-tabs">
+    <div class="order-type-tab active" data-type="market" onclick="switchOrderType(this)">Market</div>
+    <div class="order-type-tab" data-type="limit" onclick="switchOrderType(this)">Limit</div>
+    <div class="order-type-tab" data-type="stop_loss" onclick="switchOrderType(this)">Stop Loss</div>
+    <div class="order-type-tab" data-type="take_profit" onclick="switchOrderType(this)">Take Profit</div>
+  </div>
+
+  <div class="order-row">
+    <label>Symbol</label>
+    <input type="text" id="order-symbol" class="order-symbol-input" placeholder="EURUSD" value="{{ default_symbol|default('') }}">
+  </div>
+  <div class="order-row">
+    <label>Qty</label>
+    <input type="number" id="order-qty" min="1" value="1" step="1">
+  </div>
+  <div class="order-row" id="order-price-row" style="display:none;">
+    <label>Price</label>
+    <input type="number" id="order-price" step="0.00001" placeholder="0.00000">
+  </div>
+  <div class="order-row" id="order-stop-row" style="display:none;">
+    <label>Stop</label>
+    <input type="number" id="order-stop" step="0.00001" placeholder="0.00000">
+  </div>
+
+  <div class="order-actions">
+    <button class="order-btn buy" onclick="submitOrder('buy')"><i class="fas fa-arrow-up"></i> Buy</button>
+    <button class="order-btn sell" onclick="submitOrder('sell')"><i class="fas fa-arrow-down"></i> Sell</button>
+  </div>
+  <div class="order-info" id="order-info-text">Select order type and quantity, then click Buy or Sell</div>
+</div>
+
+<script>
+function switchOrderType(el) {
+  document.querySelectorAll('.order-type-tab').forEach(function(t) { t.classList.remove('active'); });
+  el.classList.add('active');
+  var type = el.getAttribute('data-type');
+  document.getElementById('order-price-row').style.display = (type === 'limit' || type === 'stop_loss' || type === 'take_profit') ? 'flex' : 'none';
+  document.getElementById('order-stop-row').style.display = (type === 'stop_loss' || type === 'take_profit') ? 'flex' : 'none';
+  var info = document.getElementById('order-info-text');
+  if (type === 'market') info.textContent = 'Executes immediately at current market price';
+  else if (type === 'limit') info.textContent = 'Executes when price reaches your limit price';
+  else if (type === 'stop_loss') info.textContent = 'Triggers when price hits the stop level';
+  else info.textContent = 'Takes profit when price reaches the target';
+}
+
+function submitOrder(direction) {
+  var typeEl = document.querySelector('.order-type-tab.active');
+  var orderType = typeEl ? typeEl.getAttribute('data-type') : 'market';
+  var symbol = document.getElementById('order-symbol').value.trim().toUpperCase();
+  var qty = parseFloat(document.getElementById('order-qty').value) || 1;
+  var price = parseFloat(document.getElementById('order-price').value) || null;
+  var stopPrice = parseFloat(document.getElementById('order-stop').value) || null;
+
+  if (!symbol) { showToast('Please enter a symbol', 'error'); return; }
+  if (qty <= 0) { showToast('Quantity must be positive', 'error'); return; }
+
+  var btn = event.target;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+  var body = { symbol: symbol, order_type: orderType, direction: direction, quantity: qty };
+  if (price) body.price = price;
+  if (stopPrice) body.stop_price = stopPrice;
+
+  fetch('/api/orders', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.success) {
+      showToast(data.message || (orderType.charAt(0).toUpperCase() + orderType.slice(1) + ' order placed'), 'success');
+      if (typeof refreshOrders === 'function') refreshOrders();
+    } else {
+      showToast(data.error || 'Order failed', 'error');
+    }
+  })
+  .catch(function(e) {
+    showToast('Error placing order', 'error');
+  })
+  .finally(function() {
+    btn.disabled = false;
+    btn.innerHTML = direction === 'buy' ? '<i class="fas fa-arrow-up"></i> Buy' : '<i class="fas fa-arrow-down"></i> Sell';
+  });
+}
+</script>

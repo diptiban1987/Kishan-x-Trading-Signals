@@ -116,47 +116,50 @@ class IndianTradingSystem:
         self.today_file = None
         self._init_activity_log()
         
-        # Expected price ranges for sanity checks (min, max)
-        self.price_ranges = {
-            'NIFTY50': (18000, 28000),
-            'BANKNIFTY': (40000, 55000),
-            'SENSEX': (55000, 85000),
-            'FINNIFTY': (18000, 26000),
-            'MIDCPNIFTY': (10000, 18000),
-            'NIFTYREALTY': (400, 800),
-            'NIFTYPVTBANK': (20000, 30000),
-            'NIFTYPSUBANK': (4000, 8000),
-            'NIFTYFIN': (18000, 26000),
-            'NIFTYMEDIA': (1500, 3500),
-            'RELIANCE': (1000, 1800),
-            'TCS': (2000, 4500),
-            'HDFCBANK': (600, 1900),
-            'INFY': (1000, 2000),
-            'ICICIBANK': (800, 1500),
-            'HINDUNILVR': (1800, 3500),
-            'SBIN': (500, 1100),
-            'BHARTIARTL': (1400, 2000),
-            'KOTAKBANK': (300, 2100),
-            'BAJFINANCE': (800, 2000)
-        }
+        # Dynamic price validation: instead of hardcoded ranges that go stale,
+        # use percentage-based sanity checks against the last known price.
+        # Cache of last-known-good prices per symbol (updated on each valid fetch)
+        self._last_known_prices = {}
+        # Maximum allowed single-day deviation from last known price (50%)
+        self._max_price_deviation_pct = 0.50
+        # Absolute floor/ceiling for any Indian instrument
+        self._absolute_price_floor = 0.50   # No legit stock below ₹0.50
+        self._absolute_price_ceiling = 500000  # No legit stock above ₹5,00,000
 
         self._api_error_cooldowns = {}
         self._api_cooldown_seconds = 30
 
     def validate_price(self, symbol: str, price: float) -> bool:
-        """Validate price is within expected trading range for a symbol"""
+        """Validate price using dynamic percentage-based sanity checks.
+        
+        Instead of hardcoded ranges that go stale over time, this checks:
+        1. Price is within absolute floor/ceiling bounds
+        2. Price is within ±50% of the last known good price for this symbol
+        3. If no prior price is known, accepts any price within absolute bounds
+        """
         if price <= 0:
             return False
-        clean_symbol = symbol.replace('.NS', '').replace('.BO', '').upper()
-        for key, (lo, hi) in self.price_ranges.items():
-            if key in clean_symbol or clean_symbol in key:
-                if lo <= price <= hi * 1.5:
-                    return True
-                logger.warning(f"⚠️ PRICE ANOMALY: {symbol} price {price:.2f} outside expected range [{lo}-{hi}]")
-                return False
-        # Unknown symbol: reject if price seems absurd
-        if price > 500000 or price < 0.01:
+        
+        # Absolute bounds check
+        if price < self._absolute_price_floor or price > self._absolute_price_ceiling:
+            logger.warning(f"⚠️ PRICE ANOMALY: {symbol} price {price:.2f} outside absolute bounds "
+                          f"[{self._absolute_price_floor}-{self._absolute_price_ceiling}]")
             return False
+        
+        clean_symbol = symbol.replace('.NS', '').replace('.BO', '').upper()
+        
+        # Check against last known good price (dynamic, not hardcoded)
+        last_price = self._last_known_prices.get(clean_symbol)
+        if last_price is not None and last_price > 0:
+            deviation = abs(price - last_price) / last_price
+            if deviation > self._max_price_deviation_pct:
+                logger.warning(f"⚠️ PRICE ANOMALY: {symbol} price {price:.2f} deviates "
+                              f"{deviation:.1%} from last known {last_price:.2f} "
+                              f"(max allowed: {self._max_price_deviation_pct:.0%})")
+                return False
+        
+        # Price is valid — update last known price
+        self._last_known_prices[clean_symbol] = price
         return True
 
     def set_live_mode(self, live: bool):
@@ -297,22 +300,22 @@ class IndianTradingSystem:
                         if close_col:
                             last_close = data[close_col].iloc[-1]
                             clean_sym = symbol.upper().replace('.NS', '').replace('.BO', '')
-                            for key, (lo, hi) in self.price_ranges.items():
-                                if key in clean_sym or clean_sym in key:
-                                    if last_close < lo * 0.1 and lo > 0:
-                                        price_cols = [c for c in ['Open', 'High', 'Low', 'Close', 'open', 'high', 'low', 'close'] if c in data.columns]
-                                        # Try candidate multipliers to find one that brings price into expected range
-                                        magnitude = None
-                                        for mul in [10, 20, 50, 100, 200, 500, 1000]:
-                                            if lo <= last_close * mul <= hi * 1.5:
-                                                magnitude = mul
-                                                break
-                                        if magnitude is None:
-                                            magnitude = max(1, int(lo / last_close))
-                                        for col in price_cols:
-                                            data[col] = data[col] * magnitude
-                                        logger.warning(f"🔄 Divisor correction: {symbol} prices ×{magnitude} (was {last_close:.2f}, now {data[close_col].iloc[-1]:.2f})")
-                                    break
+                            # Use last known good price to detect abnormally low values
+                            known_price = self._last_known_prices.get(clean_sym)
+                            if known_price and known_price > 0:
+                                if last_close < known_price * 0.1:
+                                    price_cols = [c for c in ['Open', 'High', 'Low', 'Close', 'open', 'high', 'low', 'close'] if c in data.columns]
+                                    # Try candidate multipliers to find one that brings price close to known price
+                                    magnitude = None
+                                    for mul in [10, 20, 50, 100, 200, 500, 1000]:
+                                        if known_price * 0.5 <= last_close * mul <= known_price * 1.5:
+                                            magnitude = mul
+                                            break
+                                    if magnitude is None:
+                                        magnitude = max(1, int(known_price / last_close))
+                                    for col in price_cols:
+                                        data[col] = data[col] * magnitude
+                                    logger.warning(f"🔄 Divisor correction: {symbol} prices ×{magnitude} (was {last_close:.2f}, now {data[close_col].iloc[-1]:.2f})")
                         return data
                     logger.warning(f"Angel One returned no data for {symbol}, falling back to yfinance...")
                 except Exception as e:
@@ -415,8 +418,11 @@ class IndianTradingSystem:
                     # Convert AI direction to BUY/SELL
                     direction = 'BUY' if ai_signal['signal'] in ('BUY', 'CALL') else 'SELL' if ai_signal['signal'] in ('SELL', 'PUT') else 'HOLD'
                     
-                    # Linearly scale raw softmax [0.55, 1.0] to standard confidence [0.82, 0.98] to pass the dashboard quality gate
-                    confidence = min(max(0.82 + (raw_conf - 0.55) * 0.36, 0.60), 0.98)
+                    # Honest mapping: raw softmax [0.55, 1.0] -> confidence [0.60, 0.95]. Reject weak signals below 0.65
+                    if raw_conf < 0.65:
+                        logger.info(f"Skipping AI signal for {symbol}: raw confidence {raw_conf:.3f} below 0.65 threshold")
+                        return None
+                    confidence = min(max(0.60 + (raw_conf - 0.55) * 0.78, 0.50), 0.95)
                     current_price = data['Close'].iloc[-1]
                     
                     # Calculate ATR-based adaptive targets
@@ -460,7 +466,7 @@ class IndianTradingSystem:
             # Apply trading strategies
             signal = self._apply_indian_strategies(symbol, data, indicators)
             
-            # Override target/stop with ATR-based levels for all non-HOLD signals
+            # Blend ATR levels with strategy targets: use the better of the two
             if signal.signal_type != 'HOLD' and signal.confidence > 0:
                 current_price = data['Close'].iloc[-1]
                 atr = indicators.get('atr', self._calculate_atr(data, 14))
@@ -468,11 +474,11 @@ class IndianTradingSystem:
                 target_mult = max(atr_pct * 2, 0.008)
                 stop_mult = max(atr_pct * 1.5, 0.005)
                 if signal.signal_type == 'BUY':
-                    signal.target_price = current_price * (1 + target_mult)
-                    signal.stop_loss = current_price * (1 - stop_mult)
+                    signal.target_price = max(signal.target_price, current_price * (1 + target_mult))
+                    signal.stop_loss = max(signal.stop_loss, current_price * (1 - stop_mult))
                 else:
-                    signal.target_price = current_price * (1 - target_mult)
-                    signal.stop_loss = current_price * (1 + stop_mult)
+                    signal.target_price = min(signal.target_price, current_price * (1 - target_mult))
+                    signal.stop_loss = min(signal.stop_loss, current_price * (1 + stop_mult))
             
             # Calculate risk-reward
             risk_reward = self._calculate_risk_reward(signal, data)
@@ -528,6 +534,18 @@ class IndianTradingSystem:
             # Average True Range for adaptive stop/target
             atr = self._calculate_atr(data, 14)
             
+            bb_middle = sma20.iloc[-1] if not sma20.empty else close_prices.iloc[-1]
+            bb_width = ((bb_upper.iloc[-1] - bb_lower.iloc[-1]) / sma20.iloc[-1]) if not sma20.empty else 0.04
+
+            # Stochastic and Williams %R
+            stoch_k = 50
+            williams_r = -50
+            if len(close_prices) > 14:
+                lowest_14 = close_prices.rolling(window=14).min()
+                highest_14 = close_prices.rolling(window=14).max()
+                stoch_k = ((close_prices.iloc[-1] - lowest_14.iloc[-1]) / (highest_14.iloc[-1] - lowest_14.iloc[-1] + 1e-10)) * 100
+                williams_r = ((highest_14.iloc[-1] - close_prices.iloc[-1]) / (highest_14.iloc[-1] - lowest_14.iloc[-1] + 1e-10)) * -100
+
             return {
                 'rsi': rsi.iloc[-1] if not rsi.empty else 50,
                 'macd': macd.iloc[-1] if not macd.empty else 0,
@@ -539,7 +557,17 @@ class IndianTradingSystem:
                 'volume_ratio': volume_ratio.iloc[-1] if not volume_ratio.empty else 1.0,
                 'support_levels': support_levels,
                 'resistance_levels': resistance_levels,
-                'atr': atr
+                'atr': atr,
+                # Aliases for strategy compatibility
+                'sma_20': sma20.iloc[-1] if not sma20.empty else close_prices.iloc[-1],
+                'sma_50': sma50.iloc[-1] if not sma50.empty else close_prices.iloc[-1],
+                'sma_200': sma200.iloc[-1] if not sma200.empty else close_prices.iloc[-1],
+                'ema_12': ema12.iloc[-1] if not ema12.empty else close_prices.iloc[-1],
+                'ema_26': ema26.iloc[-1] if not ema26.empty else close_prices.iloc[-1],
+                'bb_middle': bb_middle,
+                'bb_width': bb_width,
+                'stochastic_k': stoch_k,
+                'williams_r': williams_r,
             }
             
         except Exception as e:
@@ -701,7 +729,7 @@ class IndianTradingSystem:
             elif volatility_sell:
                 target = current_price * 0.985  # 1.5% target
                 stop_loss = current_price * 1.015  # 1.5% stop loss
-                confidence = min((rsi - 25) / 50, 1.0)
+                confidence = min((rsi - 75) / 25, 1.0)
                 
                 return {
                     'type': 'SELL',
@@ -739,7 +767,7 @@ class IndianTradingSystem:
             for resistance in resistance_levels:
                 if current_price > resistance and volume_ratio > 1.5:
                     breakout_buy = True
-                    breakout_target = resistance * 1.02
+                    breakout_target = max(resistance * 1.02, current_price * 1.015)
                     break
             
             # Check for breakdown below support
@@ -749,7 +777,7 @@ class IndianTradingSystem:
             for support in support_levels:
                 if current_price < support and volume_ratio > 1.5:
                     breakdown_sell = True
-                    breakdown_target = support * 0.98
+                    breakdown_target = min(support * 0.98, current_price * 0.985)
                     break
             
             if breakout_buy:
@@ -895,8 +923,8 @@ class IndianTradingSystem:
         """Calculate RSI indicator"""
         try:
             delta = prices.diff()
-            gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
-            loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+            gain = (delta.where(delta > 0, 0)).ewm(alpha=1/period, min_periods=period).mean()
+            loss = (-delta.where(delta < 0, 0)).ewm(alpha=1/period, min_periods=period).mean()
             rs = gain / loss
             rsi = 100 - (100 / (1 + rs))
             return rsi
@@ -905,16 +933,17 @@ class IndianTradingSystem:
             return pd.Series()
     
     def _find_support_levels(self, prices: pd.Series) -> List[float]:
-        """Find support levels using pivot points"""
+        """Find support levels using pivot points — only recent 60 candles"""
         try:
             if len(prices) < 20:
                 return []
                 
+            recent_prices = prices.iloc[-60:]
             # Simple support levels using recent lows
             support_levels = []
-            for i in range(10, len(prices)):
-                if prices.iloc[i] == prices.iloc[i-10:i+1].min():
-                    support_levels.append(prices.iloc[i])
+            for i in range(10, len(recent_prices)):
+                if recent_prices.iloc[i] == recent_prices.iloc[i-10:i+1].min():
+                    support_levels.append(recent_prices.iloc[i])
                     
             return support_levels[:3]  # Return top 3 support levels
             
@@ -923,16 +952,17 @@ class IndianTradingSystem:
             return []
     
     def _find_resistance_levels(self, prices: pd.Series) -> List[float]:
-        """Find resistance levels using pivot points"""
+        """Find resistance levels using pivot points — only recent 60 candles"""
         try:
             if len(prices) < 20:
                 return []
                 
+            recent_prices = prices.iloc[-60:]
             # Simple resistance levels using recent highs
             resistance_levels = []
-            for i in range(10, len(prices)):
-                if prices.iloc[i] == prices.iloc[i-10:i+1].max():
-                    resistance_levels.append(prices.iloc[i])
+            for i in range(10, len(recent_prices)):
+                if recent_prices.iloc[i] == recent_prices.iloc[i-10:i+1].max():
+                    resistance_levels.append(recent_prices.iloc[i])
                     
             return resistance_levels[:3]  # Return top 3 resistance levels
             
@@ -1067,7 +1097,7 @@ class IndianTradingSystem:
             for resistance in resistance_levels:
                 if current_price > resistance and volume_ratio > 1.5:
                     breakout_buy = True
-                    breakout_target = resistance * 1.02
+                    breakout_target = max(resistance * 1.02, current_price * 1.015)
                     break
             
             # Check for breakdown below support with volume
@@ -1077,7 +1107,7 @@ class IndianTradingSystem:
             for support in support_levels:
                 if current_price < support and volume_ratio > 1.5:
                     breakdown_sell = True
-                    breakdown_target = support * 0.98
+                    breakdown_target = min(support * 0.98, current_price * 0.985)
                     break
             
             if breakout_buy:
@@ -1524,7 +1554,6 @@ class IndianAutoTrader:
                 }
                 if partial_exit:
                     self.scaled_out[tid] = True
-                    logger.info(f"Restored active trade: {tid} {row[1]} {row[2]} (SL: {self.active_trades[tid]['stop_loss']:.2f}, TP: {self.active_trades[tid]['target_price']:.2f})")
                 logger.info(f"Restored active trade: {tid} {row[1]} {row[2]} (SL: {self.active_trades[tid]['stop_loss']:.2f}, TP: {self.active_trades[tid]['target_price']:.2f})")
             conn.close()
             if self.active_trades:
@@ -1609,8 +1638,9 @@ class IndianAutoTrader:
                         self.daily_pnl = 0.0
                         self.daily_direction_tracker = {}
                         self.signal_confirm_cache = {}
-                        self.consecutive_wins = 0
-                        self.consecutive_losses = 0
+                        # Streaks intentionally NOT reset — persistent across days for sizing protection
+                        # self.consecutive_wins = 0
+                        # self.consecutive_losses = 0
 
                     active_count = len(self.active_trades)
                     logger.info(f"Market open — {active_count}/{self.max_concurrent_trades} active trades")
@@ -1781,7 +1811,17 @@ class IndianAutoTrader:
                         trade['stop_loss'] = new_sl
                         trade['breakeven_set'] = True
                         logger.info(f"🔒 Breakeven set for {trade_id} (SELL)")
-            return  # Only trail after breakeven
+            # Gradually tighten trailing stop even before breakeven using 3x wider trail distance
+            pre_breakeven_dist = trail_dist * 3
+            if trade['type'] == 'BUY':
+                new_stop = current_price - pre_breakeven_dist
+                if current_price > trade['entry_price'] and new_stop > trade['stop_loss']:
+                    trade['stop_loss'] = new_stop
+            elif trade['type'] == 'SELL':
+                new_stop = current_price + pre_breakeven_dist
+                if current_price < trade['entry_price'] and new_stop < trade['stop_loss']:
+                    trade['stop_loss'] = new_stop
+            return
         
         # ATR-based trailing after breakeven
         if trade['type'] == 'BUY':
@@ -1812,7 +1852,7 @@ class IndianAutoTrader:
                     logger.error(f"Failed to update stop_loss in DB for {trade_id}: {db_e}")
 
     def _is_price_sane(self, symbol: str, price: float, entry_price: float) -> bool:
-        """Sanity check: price must be within 50% of entry and within symbol's expected range"""
+        """Sanity check: price must be within 50% of entry and within absolute bounds"""
         if price <= 0:
             return False
         # Within 50% of entry price
@@ -1821,14 +1861,10 @@ class IndianAutoTrader:
             if deviation > 0.50:
                 logger.warning(f"⚠️ Price sanity FAIL: {symbol} price={price:.2f} deviates {deviation*100:.1f}% from entry={entry_price:.2f}")
                 return False
-        # Within symbol's expected range
-        clean_symbol = symbol.replace('.NS', '').replace('.BO', '').upper()
-        for key, (lo, hi) in self.trading_system.price_ranges.items():
-            if key in clean_symbol or clean_symbol in key:
-                if not (lo * 0.3 <= price <= hi * 1.5):
-                    logger.warning(f"⚠️ Price range FAIL: {symbol} price={price:.2f} outside range [{lo}-{hi}]")
-                    return False
-                break
+        # Within absolute bounds (dynamic, not hardcoded ranges)
+        if price < self.trading_system._absolute_price_floor or price > self.trading_system._absolute_price_ceiling:
+            logger.warning(f"⚠️ Price range FAIL: {symbol} price={price:.2f} outside absolute bounds")
+            return False
         return True
 
     def _evaluate_trade_exit(self, trade_id: str, trade: dict, current_price: float):
@@ -1858,7 +1894,10 @@ class IndianAutoTrader:
                 stop_loss = trade.get('stop_loss', 0) or trade.get('initial_stop_loss', 0)
                 if stop_loss > 0 and trade['entry_price'] > 0:
                     risk_per_unit = abs(trade['entry_price'] - stop_loss)
-                    reward_per_unit = abs(current_price - trade['entry_price'])
+                    if trade['type'] == 'BUY':
+                        reward_per_unit = current_price - trade['entry_price']
+                    else:
+                        reward_per_unit = trade['entry_price'] - current_price
                     rr_achieved = reward_per_unit / risk_per_unit if risk_per_unit > 0 else 0
                     # PROFIT DIRECTION CHECK: only scale out when trade is actually in profit
                     in_profit = (trade['type'] == 'BUY' and current_price > trade['entry_price']) or                                 (trade['type'] == 'SELL' and current_price < trade['entry_price'])
@@ -2079,7 +2118,7 @@ class IndianAutoTrader:
     def _get_atr_pct(self, symbol: str) -> float:
         """Get ATR percentage for a symbol to gauge volatility"""
         try:
-            df = self.trading_system.get_indian_market_data(symbol)
+            df = self.trading_system.get_indian_market_data(symbol, period='1mo', interval='1d')
             if df is not None and not df.empty and len(df) > 14:
                 from numpy import nan
                 high = df['High'].values
@@ -2261,8 +2300,11 @@ class IndianAutoTrader:
             try:
                 df = self.trading_system.get_indian_market_data(signal.symbol)
                 if df is not None and not df.empty and len(df) > self.trend_ema_period:
-                    closes = df['close'].values
-                    ema50 = np.mean(closes[-self.trend_ema_period:])
+                    col = 'close' if 'close' in df.columns else 'Close'
+                    closes = df[col].values
+                    weights = np.exp(np.linspace(-1., 0., self.trend_ema_period))
+                    weights /= weights.sum()
+                    ema50 = np.dot(weights, closes[-self.trend_ema_period:])
                     current = closes[-1]
                     if signal.signal_type == 'BUY' and current < ema50 * 0.98:
                         logger.info(f"⏭️ Skipping {signal.symbol} BUY: price {current:.2f} below 50-EMA {ema50:.2f}")
@@ -2301,9 +2343,7 @@ class IndianAutoTrader:
             except Exception:
                 pass
 
-            # PILLAR 5: Gemini AI validation — advisory only (no longer blocks trades)
-            if not self._validate_with_gemini(signal):
-                logger.info(f"🤖 Gemini AI advisory: {signal.symbol} {signal.signal_type} — allowing trade anyway")
+            # PILLAR 5: Gemini AI validation removed — was advisory only and wasted 5-10s per trade
 
             # PILLAR 6: Record direction for no-reentry tracking
             clean_sym = signal.symbol.replace('.NS', '').replace('.BO', '').upper()
@@ -2315,9 +2355,9 @@ class IndianAutoTrader:
                 current_balance = (self.initial_balance + self.total_pnl) * self.capital_utilization_pct
                 # Subtract already-locked margin from available capital to prevent over-allocation
                 locked_margin = sum(
-                    t.get('entry_price', 0) * t.get('quantity', 0) * abs(t.get('quantity', 0))
+                    t.get('entry_price', 0) * t.get('quantity', 0)
                     for t in self.active_trades.values()
-                ) / max(len(self.active_trades), 1)
+                )
                 available_capital = max(0, current_balance - locked_margin)
                 remaining_slots = max(self.max_concurrent_trades - len(self.active_trades), 1)
                 allocated_capital = available_capital / remaining_slots
@@ -2325,10 +2365,10 @@ class IndianAutoTrader:
                     logger.warning(f"Zero/negative available capital ({allocated_capital:.2f}), skipping trade")
                     return
                 base_quantity = int(allocated_capital / signal.entry_price)
-                # Confidence-weighted sizing: 0.3x at 30% to 2.0x at 90%+ confidence
-                confidence_mult = min(2.0, max(0.3, signal.confidence / 0.75))
-                # Drawdown streak protection: halve size after 3 consecutive losses, boost after 3 wins
-                streak_mult = 0.5 if self.consecutive_losses >= 3 else (1.2 if self.consecutive_wins >= 3 else 1.0)
+                # Confidence-weighted sizing: 0.5x at 40% to 1.5x at 90%+ confidence
+                confidence_mult = min(1.5, max(0.5, signal.confidence / 0.80))
+                # Drawdown streak protection: halve size after 3 consecutive losses, no win boost
+                streak_mult = 0.5 if self.consecutive_losses >= 3 else 1.0
                 trade_qty = max(1, int(base_quantity * confidence_mult * streak_mult))
                 logger.info(f"📊 Sizing: base={base_quantity} × conf={confidence_mult:.2f} × streak={streak_mult:.2f} = {trade_qty} qty")
             except Exception as e:
@@ -2462,13 +2502,14 @@ class IndianAutoTrader:
     def _close_trade(self, trade_id: str, reason: str, exit_price: float):
         """Close a trade"""
         try:
+            # Minimize lock section: only in-memory state mutations need the lock
             with self._lock:
                 if trade_id not in self.active_trades:
                     return
                 trade = self.active_trades[trade_id]
             logger.info(f"Closing trade {trade_id}: {reason}")
 
-            # Place closing order (only real broker in LIVE mode)
+            # Place closing order (only real broker in LIVE mode) — outside lock
             if self.trading_system.is_live() and self.trading_system.angel_one and self.trading_system.angel_one.is_connected:
                 close_type = "SELL" if trade['type'] == "BUY" else "BUY"
                 order_response = self.trading_system.angel_one.place_order(
@@ -2493,24 +2534,21 @@ class IndianAutoTrader:
 
             logger.info(f"Trade {trade_id} P&L amount: {pnl_amount:.2f}")
 
+            # In-memory state mutations under lock (fast)
             with self._lock:
-                # PILLAR 1: Record cooldown timestamp for this symbol
                 clean_sym = trade['symbol'].replace('.NS', '').replace('.BO', '').upper()
                 self.symbol_cooldown[clean_sym] = time.time()
-                # Reset signal confirmation for this symbol
                 self.signal_confirm_cache.pop(clean_sym, None)
 
-                # Update in-memory performance
                 self.total_pnl += pnl_amount
                 self.daily_pnl += pnl_amount
-                # Consecutive win/loss streak tracking for adaptive sizing
                 if pnl_amount > 0:
                     self.consecutive_wins += 1
                     self.consecutive_losses = 0
                 else:
                     self.consecutive_losses += 1
                     self.consecutive_wins = 0
-                logger.info(f"📊 Streak: {self.consecutive_wins}W / {self.consecutive_losses}L")
+                logger.info(f"Streak: {self.consecutive_wins}W / {self.consecutive_losses}L")
                 closed_trade = {
                     'id': trade_id,
                     'symbol': trade['symbol'],
@@ -2520,86 +2558,69 @@ class IndianAutoTrader:
                     'quantity': quantity,
                     'reason': reason,
                     'pnl_amount': pnl_amount,
-                    # Store full timestamp so date filters work
                     'exit_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 }
                 self.trade_history.append(closed_trade)
-
-                # Remove from active_trades in-memory dict
                 self.active_trades.pop(trade_id, None)
 
-                # Persist to SQLite: trades and portfolio_history
+            # DB and network operations — outside lock
+            try:
+                conn = sqlite3.connect(self.trading_system.db_path)
+                cursor = conn.cursor()
+                cursor.execute('''
+                    INSERT INTO trades (user_id, symbol, direction, entry_price, exit_price, quantity, status, entry_time, exit_time, profit_loss)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    self.user_id,
+                    trade['symbol'],
+                    trade['type'],
+                    float(entry_price),
+                    float(exit_price),
+                    float(quantity),
+                    'CLOSED',
+                    trade['timestamp'],
+                    datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    float(pnl_amount)
+                ))
+                cursor.execute('''
+                    SELECT portfolio_value FROM portfolio_history WHERE user_id = ? ORDER BY timestamp DESC LIMIT 1
+                ''', (self.user_id,))
+                row = cursor.fetchone()
+                last_value = float(row[0]) if row else float(self.initial_balance)
+                new_value = last_value + float(pnl_amount)
+                cursor.execute('''
+                    INSERT INTO portfolio_history (user_id, portfolio_value, timestamp)
+                    VALUES (?, ?, ?)
+                ''', (self.user_id, new_value, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
                 try:
-                    conn = sqlite3.connect(self.trading_system.db_path)
-                    cursor = conn.cursor()
-
-                    # Insert closed trade record
-                    cursor.execute('''
-                        INSERT INTO trades (user_id, symbol, direction, entry_price, exit_price, quantity, status, entry_time, exit_time, profit_loss)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ''', (
-                        self.user_id,
-                        trade['symbol'],
-                        trade['type'],
-                        float(entry_price),
-                        float(exit_price),
-                        float(quantity),
-                        'CLOSED',
-                        trade['timestamp'],
-                        datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                        float(pnl_amount)
-                    ))
-
-                    # Determine last portfolio value; if none, start with initial_balance
-                    cursor.execute('''
-                        SELECT portfolio_value FROM portfolio_history WHERE user_id = ? ORDER BY timestamp DESC LIMIT 1
-                    ''', (self.user_id,))
-                    row = cursor.fetchone()
-                    last_value = float(row[0]) if row else float(self.initial_balance)
-                    new_value = last_value + float(pnl_amount)
-
-                    # Insert new portfolio snapshot
-                    cursor.execute('''
-                        INSERT INTO portfolio_history (user_id, portfolio_value, timestamp)
-                        VALUES (?, ?, ?)
-                    ''', (
-                        self.user_id,
-                        new_value,
-                        datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                    ))
-
-                    # Remove from active_trades table if exists
-                    try:
-                        cursor.execute('DELETE FROM active_trades WHERE id=?', (trade_id,))
-                    except Exception:
-                        pass
-                    conn.commit()
-                    conn.close()
-                except Exception as db_err:
-                    logger.error(f"Error updating portfolio/trades in DB: {db_err}")
-
-                # Log activity
-                try:
-                    self.trading_system.log_activity(
-                        f'CLOSE({reason})', trade['symbol'],
-                        entry_price, exit_price, quantity,
-                        pnl_amount, self.initial_balance + self.total_pnl,
-                        trade.get('strategy', 'Auto')
-                    )
+                    cursor.execute('DELETE FROM active_trades WHERE id=?', (trade_id,))
                 except Exception:
                     pass
-                
-                # Emit Socket.IO event to remove trade from UI
-                try:
-                    from app import socketio
-                    socketio.emit('trade_closed', {
-                        'trade_id': trade_id,
-                        'symbol': trade['symbol'],
-                        'reason': reason,
-                        'pnl': float(pnl_amount)
-                    })
-                except Exception as emit_err:
-                    pass
+                conn.commit()
+                conn.close()
+            except Exception as db_err:
+                logger.error(f"Error updating portfolio/trades in DB: {db_err}")
+
+            try:
+                self.trading_system.log_activity(
+                    f'CLOSE({reason})', trade['symbol'],
+                    entry_price, exit_price, quantity,
+                    pnl_amount, self.initial_balance + self.total_pnl,
+                    trade.get('strategy', 'Auto')
+                )
+            except Exception:
+                pass
+
+            try:
+                from app import socketio
+                socketio.emit('trade_closed', {
+                    'trade_id': trade_id,
+                    'symbol': trade['symbol'],
+                    'reason': reason,
+                    'pnl': float(pnl_amount)
+                })
+            except Exception as emit_err:
+                pass
                 
         except Exception as e:
             logger.error(f"Error closing trade: {str(e)}")

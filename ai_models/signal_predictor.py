@@ -134,8 +134,8 @@ class AISignalPredictor:
 
         # RSI-14
         delta = close.diff()
-        gain = delta.where(delta > 0, 0).rolling(14).mean()
-        loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
+        gain = delta.where(delta > 0, 0).ewm(alpha=1/14, min_periods=14).mean()
+        loss = (-delta.where(delta < 0, 0)).ewm(alpha=1/14, min_periods=14).mean()
         rs = gain / (loss + 1e-10)
         rsi = 100 - (100 / (1 + rs))
         f['rsi'] = rsi
@@ -283,46 +283,120 @@ class AISignalPredictor:
             "trained_at": self._trained_at,
         }
 
+    def _train_from_Xy(self, X: pd.DataFrame, y: pd.Series,
+                       validation_split: float = 0.2) -> Dict:
+        """Train XGBoost model from pre-computed features and labels.
+        
+        Used by auto_train() which generates labels per-symbol to avoid
+        cross-symbol data leakage from shift() in create_labels().
+        """
+        _ensure_ml_imports()
+
+        if len(X) < 100:
+            return {"error": "Insufficient data for training", "rows": len(X)}
+
+        split = int(len(X) * (1 - validation_split))
+        X_train, X_val = X.iloc[:split], X.iloc[split:]
+        y_train, y_val = y.iloc[:split], y.iloc[split:]
+
+        self.model = _xgb.XGBClassifier(
+            n_estimators=200, max_depth=6, learning_rate=0.08,
+            objective='multi:softprob', num_class=3,
+            eval_metric='mlogloss', random_state=42,
+            subsample=0.8, colsample_bytree=0.8,
+            min_child_weight=3, reg_alpha=0.1, reg_lambda=1.0,
+        )
+        self.model.fit(X_train, y_train,
+                       eval_set=[(X_val, y_val)], verbose=False)
+
+        y_pred = self.model.predict(X_val)
+        accuracy = float(_sklearn_accuracy(y_val, y_pred))
+        report = _sklearn_report(y_val, y_pred,
+                                 target_names=self.SIGNAL_CLASSES,
+                                 output_dict=True, zero_division=0)
+
+        self._accuracy = accuracy
+        self._trained_at = datetime.now().isoformat()
+        self.save_model()
+
+        importance = dict(zip(self.feature_columns,
+                              self.model.feature_importances_.tolist()))
+
+        logger.info(f"Model trained (per-symbol labels) — accuracy: {accuracy:.4f}")
+        return {
+            "accuracy": accuracy,
+            "classification_report": report,
+            "feature_importance": importance,
+            "training_samples": len(X_train),
+            "validation_samples": len(X_val),
+            "model_version": self.MODEL_VERSION,
+            "trained_at": self._trained_at,
+        }
+
     def auto_train(self, symbols: List[str] = None) -> Dict:
-        """Auto-train on a basket of Indian + global symbols."""
+        """Auto-train on a basket of Indian + global symbols.
+        
+        Labels are generated PER-SYMBOL before concatenation to prevent
+        cross-symbol data leakage from shift(-forward_window) in create_labels().
+        """
         if symbols is None:
             symbols = ['RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'SBIN',
                         'NIFTY50', 'BANKNIFTY']
 
-        all_dfs = []
+        all_X = []
+        all_y = []
         for sym in symbols:
             df = self.fetch_market_data(sym, period='2y')
             if df is not None and len(df) > 50:
-                all_dfs.append(df)
+                # Generate features and labels PER-SYMBOL so shift(-3) in
+                # create_labels() never leaks across symbol boundaries
+                X_sym = self.prepare_features(df)
+                y_sym = self.create_labels(df)
+                valid = y_sym.notna()
+                X_sym = X_sym[valid]
+                y_sym = y_sym[valid].astype(int)
+                if len(X_sym) > 20:
+                    all_X.append(X_sym)
+                    all_y.append(y_sym)
 
-        if not all_dfs:
+        if not all_X:
             return {"error": "Could not fetch training data for any symbol"}
 
-        combined = pd.concat(all_dfs, ignore_index=True)
-        combined = combined.sort_index()
-        return self.train(combined)
+        combined_X = pd.concat(all_X).sort_index()
+        combined_y = pd.concat(all_y).sort_index()
+        return self._train_from_Xy(combined_X, combined_y)
+    # Temperature for probability calibration — raw softmax is overconfident.
+    # T > 1 softens probabilities (e.g. raw 0.95 → ~0.75 at T=2.0).
+    TEMPERATURE = 2.0
 
     # ------------------------------------------------------------------
     # Prediction
     # ------------------------------------------------------------------
     def predict(self, df: pd.DataFrame) -> Dict:
-        """Generate signal from latest data row."""
+        """Generate signal from latest data row with temperature-calibrated confidence."""
         if self.model is None:
             raise ValueError("Model not trained or loaded")
 
         features = self.prepare_features(df)
         latest = features.iloc[-1:]
-        proba = self.model.predict_proba(latest)[0]
+        raw_proba = self.model.predict_proba(latest)[0]
 
-        idx = int(np.argmax(proba))
-        confidence = float(np.max(proba))
+        # Temperature scaling: apply to log-probabilities then re-normalize
+        # This calibrates overconfident softmax outputs (e.g. 0.99 → 0.82)
+        log_proba = np.log(raw_proba + 1e-10)
+        scaled = np.exp(log_proba / self.TEMPERATURE)
+        calibrated_proba = scaled / scaled.sum()
+
+        idx = int(np.argmax(calibrated_proba))
+        confidence = float(np.max(calibrated_proba))
 
         return {
             'signal': self.SIGNAL_CLASSES[idx],
             'confidence': round(confidence, 4),
+            'raw_confidence': round(float(np.max(raw_proba)), 4),
             'probabilities': {
                 cls: round(float(p), 4)
-                for cls, p in zip(self.SIGNAL_CLASSES, proba)
+                for cls, p in zip(self.SIGNAL_CLASSES, calibrated_proba)
             },
             'model_version': self.MODEL_VERSION,
             'timestamp': datetime.now().isoformat(),

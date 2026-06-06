@@ -1,0 +1,70 @@
+services:
+  - type: web
+    name: kishanx-trading-signals
+    runtime: python
+    region: singapore
+    plan: free
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: gunicorn -k eventlet -w 1 --bind 0.0.0.0:$PORT app:app
+    healthCheckPath: /
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: FLASK_ENV
+        value: production
+      - key: ENV
+        value: production
+      - key: FLASK_APP
+        value: app.py
+      - key: INDIAN_AUTOTRADE_ENABLED
+        value: "0"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENROUTER_MODEL
+        value: google/gemma-4-31b-it:free
+      - key: OPENROUTER_SITE_URL
+        value: https://kishanx-trading-signals.onrender.com
+      - key: OPENROUTER_APP_NAME
+        value: KishanX Trading Signals
+      - key: DHAN_API_TOKEN
+        sync: false
+      - key: DHAN_CLIENT_ID
+        sync: false
+      - key: DHAN_PIN
+        sync: false
+      - key: DHAN_TOTP_SECRET
+        sync: false
+      - key: ANGEL_ONE_API_KEY
+        sync: false
+      - key: ANGEL_ONE_CLIENT_CODE
+        sync: false
+      - key: ANGEL_ONE_PASSWORD
+        sync: false
+      - key: ANGEL_ONE_TOTP_SECRET
+        sync: false
+      - key: ALPHA_VANTAGE_API_KEY
+        sync: false
+      - key: ALPHA_VANTAGE_BACKUP_KEY
+        sync: false
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: MYSQL_HOST
+        sync: false
+      - key: MYSQL_USER
+        sync: false
+      - key: MYSQL_PASSWORD
+        sync: false
+      - key: MYSQL_DATABASE
+        sync: false

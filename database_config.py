@@ -1,50 +1,65 @@
 import os
+import logging
 from dotenv import load_dotenv
 import mysql.connector
 from mysql.connector import Error
 
-# Load environment variables
 load_dotenv()
 
-def get_db_connection(database=None):
-    """Create a connection to the MySQL database.
-    If database is None, connect without selecting a DB (for CREATE DATABASE)."""
-    try:
-        config = {
-            'host': os.getenv('MYSQL_HOST', 'localhost'),
-            'port': int(os.getenv('MYSQL_PORT', '3306')),
-            'user': os.getenv('MYSQL_USER', 'root'),
-            'password': os.getenv('MYSQL_PASSWORD', ''),
+logger = logging.getLogger(__name__)
+
+
+def is_render():
+    return os.environ.get('RENDER') == '1'
+
+
+def get_mysql_config():
+    if is_render():
+        return {
+            'host': os.environ.get('MYSQL_HOST'),
+            'port': int(os.environ.get('MYSQL_PORT', 3306)),
+            'user': os.environ.get('MYSQL_USER', 'root'),
+            'password': os.environ.get('MYSQL_PASSWORD', ''),
+            'database': os.environ.get('MYSQL_DATABASE', 'trading_platform'),
         }
+    return {
+        'host': os.getenv('MYSQL_HOST', 'localhost'),
+        'port': int(os.getenv('MYSQL_PORT', '3306')),
+        'user': os.getenv('MYSQL_USER', 'root'),
+        'password': os.getenv('MYSQL_PASSWORD', ''),
+        'database': os.getenv('MYSQL_DATABASE', 'trading_platform'),
+    }
+
+
+def get_db_connection(database=None):
+    try:
+        config = get_mysql_config()
         if database:
             config['database'] = database
-        else:
-            config['database'] = os.getenv('MYSQL_DATABASE', 'trading_platform')
         connection = mysql.connector.connect(**config)
         if connection.is_connected():
-            print(f"Connected to MySQL at {config['host']}:{config.get('port', 3306)}")
+            logger.info(f"Connected to MySQL at {config['host']}:{config.get('port', 3306)}")
             return connection
     except Error as e:
-        print(f"Error connecting to MySQL: {e}")
+        logger.warning(f"Error connecting to MySQL: {e}")
         return None
 
 def create_database_if_not_exists():
-    """Create the database if it does not exist."""
     try:
         conn = get_db_connection()
         if conn is None:
             return False
         cursor = conn.cursor()
-        db_name = os.getenv('MYSQL_DATABASE', 'trading_platform')
+        db_name = get_mysql_config()['database']
         cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{db_name}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci")
         cursor.execute(f"USE `{db_name}`")
         conn.commit()
         cursor.close()
         conn.close()
-        print(f"Database '{db_name}' ready")
+        logger.info(f"Database '{db_name}' ready")
         return True
     except Error as e:
-        print(f"Error creating database: {e}")
+        logger.error(f"Error creating database: {e}")
         return False
 
 def init_database():
@@ -262,6 +277,40 @@ def init_database():
                 entry_time DATETIME,
                 strategy VARCHAR(100),
                 confidence DECIMAL(5,2),
+                partial_exit_done TINYINT(1) DEFAULT 0,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            ) ENGINE=InnoDB
+            """,
+            # Orders table
+            """
+            CREATE TABLE IF NOT EXISTS orders (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                symbol VARCHAR(50) NOT NULL,
+                order_type VARCHAR(20) NOT NULL,
+                direction VARCHAR(10) NOT NULL,
+                quantity DECIMAL(10,2) NOT NULL,
+                price DECIMAL(10,2),
+                stop_price DECIMAL(10,2),
+                status VARCHAR(20) NOT NULL DEFAULT 'pending',
+                created_at DATETIME NOT NULL,
+                executed_at DATETIME,
+                trade_id INT,
+                reject_reason TEXT,
+                notes TEXT,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            ) ENGINE=InnoDB
+            """,
+            # Login history
+            """
+            CREATE TABLE IF NOT EXISTS login_history (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                ip_address VARCHAR(45),
+                user_agent TEXT,
+                success TINYINT(1) DEFAULT 1,
+                method VARCHAR(20) DEFAULT 'password',
+                timestamp DATETIME NOT NULL,
                 FOREIGN KEY (user_id) REFERENCES users(id)
             ) ENGINE=InnoDB
             """
@@ -270,8 +319,33 @@ def init_database():
         for table_sql in tables:
             cursor.execute(table_sql)
 
+        migrations = [
+            "ALTER TABLE users ADD COLUMN tutorial_completed TINYINT(1) DEFAULT 0",
+            "ALTER TABLE users ADD COLUMN totp_secret VARCHAR(255)",
+            "ALTER TABLE users ADD COLUMN totp_enabled TINYINT(1) DEFAULT 0",
+            "ALTER TABLE users ADD COLUMN recovery_codes TEXT",
+            "ALTER TABLE active_trades ADD COLUMN partial_exit_done TINYINT(1) DEFAULT 0",
+        ]
+        for migration in migrations:
+            try:
+                cursor.execute(migration)
+            except Error:
+                pass
+
+        indexes = [
+            "CREATE INDEX IF NOT EXISTS idx_trades_user_exit ON trades(user_id, exit_time)",
+            "CREATE INDEX IF NOT EXISTS idx_portfolio_user_time ON portfolio_history(user_id, timestamp)",
+            "CREATE INDEX IF NOT EXISTS idx_signals_user_time ON signals(user_id, time)",
+            "CREATE INDEX IF NOT EXISTS idx_orders_user_created ON orders(user_id, created_at)",
+        ]
+        for idx_sql in indexes:
+            try:
+                cursor.execute(idx_sql)
+            except Error:
+                pass
+
         connection.commit()
-        print("All database tables created successfully")
+        logger.info("All MySQL database tables created successfully")
 
     except Error as e:
         print(f"Error creating database tables: {e}")

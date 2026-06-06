@@ -57,6 +57,7 @@ from routes.ai_signals import ai_signals_bp
 from models.subscription import SubscriptionManager
 from auth.decorators import require_login, require_plan, check_signal_quota
 from branding_config import branding, get_platform_setting
+from db import is_mysql, get_db, get_db_type, _connect_db, close_connection as db_close_connection, init_db as db_init_db
 
 # Get absolute paths for PythonAnywhere
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -143,6 +144,8 @@ logger = logging.getLogger(__name__)
 
 # --- Persistence helpers for autostart/active trades ---
 def ensure_persistence_tables():
+    if is_mysql():
+        return
     try:
         conn = get_db()
         cur = conn.cursor()
@@ -177,12 +180,12 @@ def ensure_persistence_tables():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER NOT NULL,
                 symbol TEXT NOT NULL,
-                order_type TEXT NOT NULL CHECK(order_type IN ('market','limit','stop_loss','take_profit')),
-                direction TEXT NOT NULL CHECK(direction IN ('buy','sell')),
+                order_type TEXT NOT NULL,
+                direction TEXT NOT NULL,
                 quantity REAL NOT NULL,
                 price REAL,
                 stop_price REAL,
-                status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','executed','cancelled','rejected')),
+                status TEXT NOT NULL DEFAULT 'pending',
                 created_at TEXT NOT NULL,
                 executed_at TEXT,
                 trade_id INTEGER,
@@ -190,12 +193,10 @@ def ensure_persistence_tables():
                 notes TEXT
             )
         """)
-        # Migration: tutorial_completed
         try:
             cur.execute("ALTER TABLE users ADD COLUMN tutorial_completed INTEGER DEFAULT 0")
         except Exception:
             pass
-        # Migration: 2FA columns
         try:
             cur.execute("ALTER TABLE users ADD COLUMN totp_secret TEXT")
         except Exception:
@@ -208,7 +209,6 @@ def ensure_persistence_tables():
             cur.execute("ALTER TABLE users ADD COLUMN recovery_codes TEXT")
         except Exception:
             pass
-        # Login history table
         cur.execute("""
             CREATE TABLE IF NOT EXISTS login_history (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -2120,154 +2120,31 @@ else:
         otc_handler = None
 
 # --- Database helpers ---
-def _connect_db():
-    """Return a new sqlite3 connection with row_factory set."""
-    db_path = os.path.join(BASE_DIR, 'trading.db')
-    conn = sqlite3.connect(db_path, check_same_thread=False, timeout=30)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA busy_timeout=5000")
-    return conn
 
 _db_local = threading.local()
 
-def get_db():
-    """Create a connection to the SQLite database."""
-    if not hasattr(g, 'db'):
-        g.db = _connect_db()
-        logger.info("Opened new per-request SQLite database connection")
-    return g.db
-
 def get_db_for_thread():
-    """Get a dedicated connection for background threads.
-    The connection is stored per-thread and reused.
-    Callers MUST close the connection at thread exit if possible."""
     if not hasattr(_db_local, 'conn') or _db_local.conn is None:
         _db_local.conn = _connect_db()
     return _db_local.conn
 
 @app.teardown_appcontext
 def close_connection(exception):
-    db = getattr(g, 'db', None)
-    if db is not None:
-        try:
-            db.close()
-            logger.info("Per-request database connection closed")
-        except Exception as e:
-            logger.error(f"Error closing database connection: {e}")
+    db_close_connection(exception)
 
 def init_db():
     """Initialize the database with required tables"""
     try:
-        import sqlite3
-        db_path = os.path.join(BASE_DIR, 'trading.db')
-        connection = sqlite3.connect(db_path)
-        
+        db_init_db()
+        connection = get_db()
+        conn = connection._conn if is_mysql() else connection._conn
         cursor = connection.cursor()
         
-        # Create users table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT UNIQUE NOT NULL,
-                password TEXT NOT NULL,
-                registered_at TEXT NOT NULL,
-                last_login TEXT,
-                balance REAL DEFAULT 10000.00,
-                is_premium BOOLEAN DEFAULT 0,
-                demo_end_time TEXT
-            )
-        """)
-
-        # Create signals table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS signals (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER,
-                pair TEXT NOT NULL,
-                direction TEXT NOT NULL,
-                confidence REAL NOT NULL,
-                time TEXT NOT NULL,
-                created_at TEXT NOT NULL,
-                entry_price REAL,
-                stop_loss REAL,
-                take_profit REAL,
-                result INTEGER,
-                FOREIGN KEY(user_id) REFERENCES users(id)
-            )
-        """)
-
-        # Create trades table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS trades (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
-                symbol TEXT NOT NULL,
-                direction TEXT NOT NULL,
-                entry_price REAL NOT NULL,
-                exit_price REAL,
-                quantity REAL NOT NULL,
-                status TEXT NOT NULL,
-                entry_time TEXT NOT NULL,
-                exit_time TEXT,
-                profit_loss REAL,
-                stop_loss REAL,
-                take_profit REAL,
-                FOREIGN KEY(user_id) REFERENCES users(id)
-            )
-        """)
-
-        # Create positions table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS positions (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
-                symbol TEXT NOT NULL,
-                quantity REAL NOT NULL,
-                average_price REAL NOT NULL,
-                last_updated TEXT NOT NULL,
-                FOREIGN KEY(user_id) REFERENCES users(id),
-                UNIQUE(user_id, symbol)
-            )
-        """)
-
-        # Create portfolio_history table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS portfolio_history (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
-                portfolio_value REAL NOT NULL,
-                timestamp TEXT NOT NULL,
-                FOREIGN KEY(user_id) REFERENCES users(id)
-            )
-        """)
-
-        # Create orders table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS orders (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
-                symbol TEXT NOT NULL,
-                order_type TEXT NOT NULL,
-                direction TEXT NOT NULL,
-                quantity REAL NOT NULL,
-                price REAL,
-                stop_price REAL,
-                status TEXT NOT NULL DEFAULT 'pending',
-                created_at TEXT NOT NULL,
-                executed_at TEXT,
-                trade_id INTEGER,
-                reject_reason TEXT,
-                notes TEXT
-            )
-        """)
-
-        # Create a default user if none exists
         cursor.execute("SELECT COUNT(*) FROM users")
-        user_count = cursor.fetchone()[0]
+        row = cursor.fetchone()
+        user_count = row[0] if row else 0
         
         if user_count == 0:
-            # Create default admin user
             default_password = generate_password_hash("admin123")
             cursor.execute("""
                 INSERT INTO users (username, password, registered_at, balance, is_premium, demo_end_time)
@@ -2281,7 +2158,6 @@ def init_db():
                 (datetime.now() + timedelta(days=365)).isoformat()
             ))
             
-            # Create testuser for login
             test_password = generate_password_hash("password123")
             cursor.execute("""
                 INSERT INTO users (username, password, registered_at, balance, is_premium, demo_end_time)
@@ -2295,14 +2171,12 @@ def init_db():
                 (datetime.now() + timedelta(days=365)).isoformat()
             ))
             
-            # Create initial portfolio snapshots for both users
             for uid in [1, 2]:
                 cursor.execute("""
                     INSERT INTO portfolio_history (user_id, portfolio_value, timestamp)
                     VALUES (?, ?, ?)
                 """, (uid, 500000.00, datetime.now().isoformat()))
-            
-                # Create portfolio history over the last 30 days
+                
                 for i in range(30):
                     date = datetime.now() - timedelta(days=i)
                     value_change = random.uniform(-2000, 3000)
@@ -2314,7 +2188,6 @@ def init_db():
             
             logger.info("Default users 'admin' and 'testuser' created")
             
-            # Create some sample trades for demonstration
             sample_trades = [
                 ("NIFTY50", "BUY", 19500.0, 19750.0, 100, "CLOSED", 2500.0),
                 ("BANKNIFTY", "SELL", 44500.0, 44200.0, 50, "CLOSED", 1500.0),
@@ -2336,7 +2209,6 @@ def init_db():
             
             logger.info("Sample trades created for demonstration")
             
-            # Create some sample positions
             sample_positions = [
                 ("NIFTY50", 50, 19800.0),
                 ("BANKNIFTY", 25, 44300.0),
@@ -2351,7 +2223,6 @@ def init_db():
             
             logger.info("Sample positions created for demonstration")
             
-            # Create some sample signals
             sample_signals = [
                 ("NIFTY50", "BUY", 0.85, 19500.0, 19400.0, 19700.0),
                 ("BANKNIFTY", "SELL", 0.78, 44500.0, 44800.0, 44200.0),
@@ -2371,11 +2242,11 @@ def init_db():
             
             logger.info("Sample signals created for demonstration")
         
-        # Create database indexes for faster performance
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_trades_user_exit ON trades(user_id, exit_time)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_portfolio_user_time ON portfolio_history(user_id, timestamp)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_signals_user_time ON signals(user_id, time)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_orders_user_created ON orders(user_id, created_at)")
+        if not is_mysql():
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_trades_user_exit ON trades(user_id, exit_time)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_portfolio_user_time ON portfolio_history(user_id, timestamp)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_signals_user_time ON signals(user_id, time)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_orders_user_created ON orders(user_id, created_at)")
         
         connection.commit()
         logger.info("Database tables created successfully")
@@ -2383,23 +2254,7 @@ def init_db():
     except Exception as e:
         logger.error(f"Error creating database tables: {e}")
         raise
-    finally:
-        if 'connection' in locals():
-            cursor.close()
-            connection.close()
-            logger.info("Database connection closed")
 
-# Initialize database on startup
-def init_app():
-    with app.app_context():
-        try:
-            init_db()
-            logger.info("Database initialized successfully")
-        except Exception as e:
-            logger.error(f"Failed to initialize database: {e}")
-            raise
-
-# Initialize the application
 init_app()
 
 # --- User helpers ---
@@ -2512,6 +2367,18 @@ def update_password_hash(user_id, password):
     except Exception as e:
         logger.error(f"Error updating password: {e}")
         return False
+
+def init_app():
+    with app.app_context():
+        try:
+            init_db()
+            logger.info("Database initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize database: {e}")
+            raise
+
+
+init_app()
 
 # --- Signal helpers ---
 def save_signal(user_id, time, pair, direction, entry_price=None, stop_loss=None, take_profit=None, confidence=None):

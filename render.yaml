@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: kishanx-trading-signals
+    name: autotrading
     runtime: python-3.11
     region: singapore
     plan: free
@@ -29,7 +29,7 @@ services:
       - key: OPENROUTER_MODEL
         value: google/gemma-4-31b-it:free
       - key: OPENROUTER_SITE_URL
-        value: https://kishanx-trading-signals.onrender.com
+        value: https://autotrading.onrender.com
       - key: OPENROUTER_APP_NAME
         value: KishanX Trading Signals
       - key: DHAN_API_TOKEN

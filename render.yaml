@@ -17,7 +17,7 @@ services:
       - key: FLASK_APP
         value: app.py
       - key: INDIAN_AUTOTRADE_ENABLED
-        value: "0"
+        value: "1"
       - key: SECRET_KEY
         generateValue: true
       - key: GEMINI_API_KEY

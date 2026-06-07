@@ -54,6 +54,26 @@ class IndianTradeSignal:
 BLOCKED_SYMBOLS = {'SENSEX', 'FINNIFTY', 'MIDCPNIFTY',
                    'NIFTYREALTY', 'NIFTYPVTBANK', 'NIFTYPSUBANK', 'NIFTYFIN', 'NIFTYMEDIA'}
 
+# ──────────────────────────────────────────────────────────────────────────────
+# BACKTEST-DRIVEN CONFIGURATION (2026-06-07)
+# ──────────────────────────────────────────────────────────────────────────────
+# AI predictor: PF=0.75, WinRate=32.7%, Sharpe=-0.75  → LOSING MONEY
+# Technical-only (all 7 symbols): PF=1.33, WinRate=51.7%, Sharpe=+0.31
+# Technical-only (SBIN+RELIANCE+TCS): PF=2.60, WinRate=62.8%, Sharpe=+1.15
+#
+# Decision: Disable AI signals, use technical-only, focus on proven symbols.
+# Set USE_AI_SIGNALS=True to re-enable AI (not recommended until model improves).
+# ──────────────────────────────────────────────────────────────────────────────
+USE_AI_SIGNALS = False   # AI predictor disabled — destroys edge (PF 0.75)
+
+# Only these symbols have backtested edge with technical strategies.
+# Other symbols still appear in the UI for charting but won't generate trade signals.
+PROVEN_SYMBOLS = {'SBIN', 'RELIANCE', 'TCS'}
+
+# Set to True to allow signals on ALL symbols (not just proven ones).
+# Not recommended — HDFCBANK/INFY/NIFTY50 drag PF down from 2.60 to 1.33.
+ALLOW_ALL_SYMBOLS = False
+
 class IndianTradingSystem:
     """Advanced Indian Trading System with Auto-Trading"""
     
@@ -382,11 +402,22 @@ class IndianTradingSystem:
     # Mock generation disabled
     
     def analyze_indian_market(self, symbol: str) -> IndianTradeSignal:
-        """Comprehensive Indian market analysis using AI"""
+        """Comprehensive Indian market analysis.
+        
+        Signal priority (based on backtest 2026-06-07):
+          1. Technical strategies are PRIMARY (PF=2.60 on proven symbols)
+          2. AI predictor is DISABLED by default (PF=0.75 — loses money)
+          3. Only PROVEN_SYMBOLS get trade signals unless ALLOW_ALL_SYMBOLS=True
+        """
         try:
             # Block index symbols that cannot be traded in cash market
             clean_sym = symbol.replace('.NS', '').replace('.BO', '').upper()
             if clean_sym in BLOCKED_SYMBOLS:
+                return self._create_neutral_signal(symbol)
+
+            # Only generate trading signals for proven symbols
+            if not ALLOW_ALL_SYMBOLS and clean_sym not in PROVEN_SYMBOLS:
+                logger.debug(f"Skipping signal for {symbol}: not in PROVEN_SYMBOLS (charting only)")
                 return self._create_neutral_signal(symbol)
 
             # Get INTRADAY data (5-minute candles) for signal generation
@@ -402,63 +433,61 @@ class IndianTradingSystem:
             if col_map:
                 data = data.rename(columns=col_map)
             
-            # AI Predictor (cached singleton to avoid disk re-load per symbol)
-            try:
-                if not hasattr(self, '_predictor'):
-                    self._predictor = AISignalPredictor()
-                predictor = self._predictor
-                # Feed live intraday data directly to the model (fixes static prediction bug)
-                ai_signal = predictor.predict_with_data(symbol, data)
-                
-                # Check if AI gave a real signal (raw softmax >= 0.55 is highly confident in a 3-class system)
-                raw_conf = ai_signal.get('confidence', 0)
-                if ai_signal and ai_signal.get('signal') != 'HOLD' and raw_conf >= 0.55:
-                    logger.info(f"Using AI signal for {symbol}: {ai_signal['signal']} with {raw_conf*100:.1f}% raw confidence")
+            # AI Predictor — DISABLED by default (backtest: PF=0.75, loses money).
+            # Set USE_AI_SIGNALS=True at module level to re-enable.
+            if USE_AI_SIGNALS:
+                try:
+                    if not hasattr(self, '_predictor'):
+                        self._predictor = AISignalPredictor()
+                    predictor = self._predictor
+                    ai_signal = predictor.predict_with_data(symbol, data)
                     
-                    # Convert AI direction to BUY/SELL
-                    direction = 'BUY' if ai_signal['signal'] in ('BUY', 'CALL') else 'SELL' if ai_signal['signal'] in ('SELL', 'PUT') else 'HOLD'
-                    
-                    # Honest mapping: raw softmax [0.55, 1.0] -> confidence [0.60, 0.95]. Reject weak signals below 0.65
-                    if raw_conf < 0.65:
-                        logger.info(f"Skipping AI signal for {symbol}: raw confidence {raw_conf:.3f} below 0.65 threshold")
-                        return None
-                    confidence = min(max(0.60 + (raw_conf - 0.55) * 0.78, 0.50), 0.95)
-                    current_price = data['Close'].iloc[-1]
-                    
-                    # Calculate ATR-based adaptive targets
-                    atr = self._calculate_atr(data, 14)
-                    atr_pct = atr / current_price if current_price > 0 else 0.02
-                    # Use 2x ATR for target, 1x ATR for stop loss (tighter stops = better R:R)
-                    target_mult = max(atr_pct * 2, 0.008)
-                    stop_mult = max(atr_pct * 1.5, 0.005)
-                    if direction == 'BUY':
-                        target = current_price * (1 + target_mult)
-                        stop_loss = current_price * (1 - stop_mult)
-                    else:
-                        target = current_price * (1 - target_mult)
-                        stop_loss = current_price * (1 + stop_mult)
+                    raw_conf = ai_signal.get('confidence', 0)
+                    if ai_signal and ai_signal.get('signal') != 'HOLD' and raw_conf >= 0.55:
+                        logger.info(f"Using AI signal for {symbol}: {ai_signal['signal']} with {raw_conf*100:.1f}% raw confidence")
                         
-                    signal = IndianTradeSignal(
-                        symbol=symbol,
-                        signal_type=direction,
-                        confidence=confidence,
-                        entry_price=current_price,
-                        target_price=target,
-                        stop_loss=stop_loss,
-                        strategy='AI XGBoost Predictor',
-                        timeframe='1D',
-                        risk_reward_ratio=0.0,
-                        market_sentiment=self._analyze_market_sentiment(symbol, data),
-                        volume_analysis=self._analyze_volume(data),
-                        volatility=self._calculate_volatility(data),
-                        timestamp=datetime.now()
-                    )
-                    
-                    risk_reward = self._calculate_risk_reward(signal, data)
-                    signal.risk_reward_ratio = risk_reward
-                    return signal
-            except Exception as ai_e:
-                logger.error(f"AI Predictor failed for {symbol}, falling back to static strategies: {ai_e}")
+                        direction = 'BUY' if ai_signal['signal'] in ('BUY', 'CALL') else 'SELL' if ai_signal['signal'] in ('SELL', 'PUT') else 'HOLD'
+                        
+                        if raw_conf < 0.65:
+                            logger.info(f"Skipping AI signal for {symbol}: raw confidence {raw_conf:.3f} below 0.65 threshold")
+                            return None
+                        confidence = min(max(0.60 + (raw_conf - 0.55) * 0.78, 0.50), 0.95)
+                        current_price = data['Close'].iloc[-1]
+                        
+                        atr = self._calculate_atr(data, 14)
+                        atr_pct = atr / current_price if current_price > 0 else 0.02
+                        target_mult = max(atr_pct * 2, 0.008)
+                        stop_mult = max(atr_pct * 1.5, 0.005)
+                        if direction == 'BUY':
+                            target = current_price * (1 + target_mult)
+                            stop_loss = current_price * (1 - stop_mult)
+                        else:
+                            target = current_price * (1 - target_mult)
+                            stop_loss = current_price * (1 + stop_mult)
+                            
+                        signal = IndianTradeSignal(
+                            symbol=symbol,
+                            signal_type=direction,
+                            confidence=confidence,
+                            entry_price=current_price,
+                            target_price=target,
+                            stop_loss=stop_loss,
+                            strategy='AI XGBoost Predictor',
+                            timeframe='1D',
+                            risk_reward_ratio=0.0,
+                            market_sentiment=self._analyze_market_sentiment(symbol, data),
+                            volume_analysis=self._analyze_volume(data),
+                            volatility=self._calculate_volatility(data),
+                            timestamp=datetime.now()
+                        )
+                        
+                        risk_reward = self._calculate_risk_reward(signal, data)
+                        signal.risk_reward_ratio = risk_reward
+                        return signal
+                except Exception as ai_e:
+                    logger.error(f"AI Predictor failed for {symbol}, falling back to technical strategies: {ai_e}")
+            else:
+                logger.debug(f"AI signals disabled for {symbol} — using technical strategies only (USE_AI_SIGNALS=False)")
             
             # Fallback to calculate technical indicators and static strategies
             indicators = self._calculate_indian_indicators(data)

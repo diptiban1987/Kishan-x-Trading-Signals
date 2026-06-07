@@ -114,7 +114,7 @@ class MySQLConnection:
 class SQLiteRow:
     @staticmethod
     def factory(cursor, row):
-        d = {}
+        d = CompatRow()
         for idx, col in enumerate(cursor.description):
             d[col[0]] = row[idx]
         return d

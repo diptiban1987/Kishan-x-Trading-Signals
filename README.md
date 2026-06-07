@@ -1,4 +1,4 @@
-# 🚀 KishanX Trading Signals - Complete Trading Platform
+# 🚀 Auto Trading Platform Signals - Complete Trading Platform
 
 ## 📋 Table of Contents
 - [Overview](#overview)

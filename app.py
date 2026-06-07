@@ -2255,8 +2255,6 @@ def init_db():
         logger.error(f"Error creating database tables: {e}")
         raise
 
-init_app()
-
 # --- User helpers ---
 def get_user_by_username(username):
     """Get user by username from SQLite database"""
